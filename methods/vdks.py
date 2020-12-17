@@ -10,17 +10,14 @@ Linear time scaling (with data points)
 Should work as is in n-dimensions (untested currently)
 
 
-
 Not Yet Implemented: 
     Sparse matricies to deal with higher dimensional empty voxels
-
-
 '''
 
 
 class vndKS(ddKS):
     def __init__(self, soft=False, T=0.1, method='all', n_test_points=10,
-                 pts=None, norm=False, oneway=True, numVoxel=None, d=3):
+                 pts=None, norm=False, oneway=True, numVoxel=None, d=3, bounds=[]):
         super().__init__(soft, T, method, n_test_points,
                  pts, norm, oneway)
         #If Number of voxels/dimension is not specified then assume 10/dimension
@@ -28,29 +25,15 @@ class vndKS(ddKS):
             self.numVoxel = (10 * torch.ones(d)).long()
         else:
             self.numVoxel = numVoxel
+        self.bounds = bounds
 
 
-    def __call__(self, d1, d2, numvoxel=None, bounds=[], approx=True):
-        if numvoxel is None:
-            self.numvoxel = (10 * torch.ones(d1.shape[1])).long()
-        else:
-            self.numvoxel = numvoxel
-
-        self.d1_vox = torch.zeros([int(x) for x in self.numvoxel])
-        self.d2_vox = torch.zeros([int(x) for x in self.numvoxel])
-        self.d = d1.shape[1]
-        self.voxel_list = {}
+    def __call__(self, d1, d2, approx=True):
         self.d1 = d1
         self.d2 = d2
-        # If no bounds are specified use data to figure out bounds
-        if len(bounds) == 0:
-            self.set_bounds()
-
-        else:
-            self.bounds = bounds
+        self.set_bounds()
         if d1.shape[1] != d2.shape[1] or d1.shape[1] != self.bounds.shape[1]:
             warnings.warn(f'Dimension Mismatch between d1,d2,bounds')
-
         self.normalize_data()
         self.fill_voxels()
         D = 0
@@ -62,9 +45,12 @@ class vndKS(ddKS):
             return D
         else:
             for v_id in self.voxel_list.keys():
-                print("YTI")
+                print("Not Implemented")
 
     def set_bounds(self):
+        # If no bounds are specified use data to figure out bounds
+        if len(self.bounds) != 0:
+            return
         lb_p = torch.min(self.d1, dim=0).values
         ub_p = torch.max(self.d1, dim=0).values
         lb_t = torch.min(self.d2, dim=0).values
@@ -75,7 +61,7 @@ class vndKS(ddKS):
             bounds[1, i] = max(ub_p[i], ub_t[i])
         self.bounds = bounds
         self.max_bounds = self.bounds[1, :] - self.bounds[0, :]
-        return bounds
+        return
 
     def normalize_data(self):
         # Force Data to be between (0..1)*numvoxels
@@ -90,6 +76,9 @@ class vndKS(ddKS):
         Fill voxels lists: d1_vox and d2_vox with points in d1 and d2
         voxel_list.keys() contains all nonempty voxels
         '''
+        self.voxel_list = {}
+        self.d1_vox = torch.zeros([int(x) for x in self.numvoxel])
+        self.d2_vox = torch.zeros([int(x) for x in self.numvoxel])
         for pt_id, ids in enumerate(self.d1.long()):
             ids = tuple(ids)
             self.d1_vox[ids] += 1
@@ -104,8 +93,6 @@ class vndKS(ddKS):
                 self.voxel_list[ids] = [pt_id]
             else:
                 self.voxel_list[ids].append(pt_id)
-        # self.d1_vox *= 1 / self.d1.shape[0]  # Normalize voxels
-        # self.d2_vox *= 1 / self.d2.shape[0]  # Normalize voxels
         self.diff = self.d2_vox / self.d2.shape[0] - self.d1_vox / self.d1.shape[0]  # Calculate difference in voxels
 
     def get_index(self, v_id):
