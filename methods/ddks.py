@@ -5,6 +5,14 @@ def S_(x, f):
     return np.power(-1, np.floor(4.0 * f * x))
 
 
+class smooth_max(object):
+    def __init__(self, T=0.1):
+        self.T = T
+
+    def __call__(self, x):
+        return self.T * torch.log((1.0 / len(x))
+                                  * torch.sum(torch.exp(x / self.T)))
+
 class ddKS(object):
     def __init__(self, soft=False, T=0.1, method='all', n_test_points=10,
                  pts=None, norm=False, oneway=True):
@@ -21,12 +29,20 @@ class ddKS(object):
         self.oneway = oneway
 
     def __call__(self, pred, true):
-        # Choose points from each dataset for ddks (Usually all)
-        Q, U = self.getQU(pred, true)
-        D = calcD(pred, true, Q, U)
+        '''
+        Takes in two distributions and returns ddks distance
+        Child classes define setup/calcD
+        :param pred:
+        :param true:
+        :return:
+        '''
+        self.setup(pred,true)
+        D = self.calcD(pred, true)
         return D
-
+    def setup(self,pred,true):
+        self.getQU(pred,true)
     def getQU(self, pred, true):
+        # Choose points from each dataset for ddks (Usually all)
         # Function to decide number of points to use for ddKS test
         if self.method == 'all':
             Q = pred;
@@ -46,21 +62,23 @@ class ddKS(object):
             else:
                 Q = self.pts.clone()
                 U = self.pts.clone()
-        return Q, U
+        self.Q = Q
+        self.U = U
+        return
 
-    def calcD(self, pred, true, Q, U):
+    def calcD(self, pred, true):
         if pred.shape[1] != 3:
-            os_pp = self.get_orthants(pred, Q)
-            os_pt = self.get_orthants(true, Q)
+            os_pp = self.get_orthants(pred, self.Q)
+            os_pt = self.get_orthants(true, self.Q)
         else:
-            os_pp = self.get_octants(pred, Q)
-            os_pt = self.get_octants(true, Q)
+            os_pp = self.get_octants(pred, self.Q)
+            os_pt = self.get_octants(true, self.Q)
         D1 = self.max((os_pp - os_pt).abs())
         if self.oneway:
             D = D1
         else:
-            os_tt = self.get_octants(true, U)
-            os_tp = self.get_octants(pred, U)
+            os_tt = self.get_octants(true, self.U)
+            os_tp = self.get_octants(pred, self.U)
             D2 = self.max((os_tt - os_tp).abs())
             D = (D1 + D2) / 2.
         if self.norm:

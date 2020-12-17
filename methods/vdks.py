@@ -1,6 +1,5 @@
-import .ddks
+from methods.ddks import ddKS
 import torch
-import sys
 import warnings
 
 '''
@@ -17,7 +16,7 @@ Not Yet Implemented:
 
 class vndKS(ddKS):
     def __init__(self, soft=False, T=0.1, method='all', n_test_points=10,
-                 pts=None, norm=False, oneway=True, numVoxel=None, d=3, bounds=[]):
+                 pts=None, norm=False, oneway=True, numVoxel=None, d=3, bounds=[], approx=True):
         super().__init__(soft, T, method, n_test_points,
                  pts, norm, oneway)
         #If Number of voxels/dimension is not specified then assume 10/dimension
@@ -26,18 +25,20 @@ class vndKS(ddKS):
         else:
             self.numVoxel = numVoxel
         self.bounds = bounds
+        self.approx = True
 
-
-    def __call__(self, d1, d2, approx=True):
-        self.d1 = d1
-        self.d2 = d2
+    def setup(self, pred, true):
+        self.pred = pred
+        self.true = true
         self.set_bounds()
-        if d1.shape[1] != d2.shape[1] or d1.shape[1] != self.bounds.shape[1]:
+        if pred.shape[1] != true.shape[1] or pred.shape[1] != self.bounds.shape[1]:
             warnings.warn(f'Dimension Mismatch between d1,d2,bounds')
         self.normalize_data()
         self.fill_voxels()
+
+    def calcD(self, pred,true):
         D = 0
-        if approx:
+        if self.approx:
             for v_id in self.voxel_list.keys():
                 V_tmp = torch.max(self.calc_voxel_oct(v_id))
                 if V_tmp > D:
@@ -51,10 +52,10 @@ class vndKS(ddKS):
         # If no bounds are specified use data to figure out bounds
         if len(self.bounds) != 0:
             return
-        lb_p = torch.min(self.d1, dim=0).values
-        ub_p = torch.max(self.d1, dim=0).values
-        lb_t = torch.min(self.d2, dim=0).values
-        ub_t = torch.max(self.d2, dim=0).values
+        lb_p = torch.min(self.pred, dim=0).values
+        ub_p = torch.max(self.pred, dim=0).values
+        lb_t = torch.min(self.true, dim=0).values
+        ub_t = torch.max(self.true, dim=0).values
         bounds = torch.zeros(2, self.d)
         for i in range(len(lb_p)):
             bounds[0, i] = min(lb_p[i], lb_t[i])
@@ -65,8 +66,8 @@ class vndKS(ddKS):
 
     def normalize_data(self):
         # Force Data to be between (0..1)*numvoxels
-        self.d1 = self.numvoxel * (self.d1 - self.bounds[0, :]) / (self.max_bounds + 1e-4)
-        self.d2 = self.numvoxel * (self.d2 - self.bounds[0, :]) / (self.max_bounds + 1e-4)
+        self.pred = self.numvoxel * (self.pred - self.bounds[0, :]) / (self.max_bounds + 1e-4)
+        self.true = self.numvoxel * (self.true - self.bounds[0, :]) / (self.max_bounds + 1e-4)
 
     def get_voxel_index(self, pt):
         return tuple(pt.long())
@@ -77,23 +78,23 @@ class vndKS(ddKS):
         voxel_list.keys() contains all nonempty voxels
         '''
         self.voxel_list = {}
-        self.d1_vox = torch.zeros([int(x) for x in self.numvoxel])
-        self.d2_vox = torch.zeros([int(x) for x in self.numvoxel])
-        for pt_id, ids in enumerate(self.d1.long()):
+        self.pred_vox = torch.zeros([int(x) for x in self.numVoxel])
+        self.true_vox = torch.zeros([int(x) for x in self.numVoxel])
+        for pt_id, ids in enumerate(self.pred.long()):
             ids = tuple(ids)
-            self.d1_vox[ids] += 1
+            self.pred_vox[ids] += 1
             if ids not in self.voxel_list:
                 self.voxel_list[ids] = [pt_id]
             else:
                 self.voxel_list[ids].append(pt_id)
         for pt_id, ids in enumerate(self.d2.long()):
             ids = tuple(ids)
-            self.d2_vox[ids] += 1
+            self.true_vox[ids] += 1
             if ids not in self.voxel_list:
                 self.voxel_list[ids] = [pt_id]
             else:
                 self.voxel_list[ids].append(pt_id)
-        self.diff = self.d2_vox / self.d2.shape[0] - self.d1_vox / self.d1.shape[0]  # Calculate difference in voxels
+        self.diff = self.true_vox / self.true.shape[0] - self.pred_vox / self.pred.shape[0]  # Calculate difference in voxels
 
     def get_index(self, v_id):
         ## Take in index to sum around spit out list of indicies
@@ -152,10 +153,10 @@ class vndKS(ddKS):
         return torch.stack([o1, o2, o3, o4, o5, o6, o7, o8], dim=1)
 
     def permute(self, J=1_000):
-        all_pts = torch.cat((self.d1, self.d2), dim=0)
-        T = self(self.d1, self.d2)
+        all_pts = torch.cat((self.pred, self.true), dim=0)
+        T = self(self.pred, self.true)
         T_ = torch.empty((J,))
-        total_shape = self.d1.shape[0] + self.d2.shape[0]
+        total_shape = self.pred.shape[0] + self.true.shape[0]
         for j in range(J):
             idx = torch.randperm(total_shape)
             idx1, idx2 = torch.chunk(idx, 2)

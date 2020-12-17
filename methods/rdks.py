@@ -1,4 +1,4 @@
-import .ddks
+from methods.ddks import ddKS
 import torch
 import warnings
 
@@ -10,7 +10,11 @@ class rdks(ddKS):
                  pts=None, norm=False, oneway=True):
         super().__init__(soft, T, method, n_test_points,
                  pts, norm, oneway)
-    def calcD(self,pred,true):
+
+    def setup(self, pred, true):
+        return
+
+    def calcD(self, pred, true):
         self.find_corners(pred, true)
         d_from_corner_p = self.get_d_from_corner(pred)
         d_from_corner_t = self.get_d_from_corner(true)
