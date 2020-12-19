@@ -41,6 +41,27 @@ class ddKS(object):
         return D
     def setup(self,pred,true):
         self.getQU(pred,true)
+    def calcD(self, pred, true):
+        if pred.shape[1] != 3:
+            os_pp = self.get_orthants(pred, self.Q)
+            os_pt = self.get_orthants(true, self.Q)
+        else:
+            os_pp = self.get_octants(pred, self.Q)
+            os_pt = self.get_octants(true, self.Q)
+        D1 = self.max((os_pp - os_pt).abs())
+        if self.oneway:
+            D = D1
+        else:
+            os_tt = self.get_octants(true, self.U)
+            os_tp = self.get_octants(pred, self.U)
+            D2 = self.max((os_tt - os_tp).abs())
+            D = (D1 + D2) / 2.
+        if self.norm:
+            D = D / float(pred.shape[0])
+        return D
+    ###
+    # Setup Functions
+    ###
     def getQU(self, pred, true):
         # Choose points from each dataset for ddks (Usually all)
         # Function to decide number of points to use for ddKS test
@@ -65,40 +86,9 @@ class ddKS(object):
         self.Q = Q
         self.U = U
         return
-
-    def calcD(self, pred, true):
-        if pred.shape[1] != 3:
-            os_pp = self.get_orthants(pred, self.Q)
-            os_pt = self.get_orthants(true, self.Q)
-        else:
-            os_pp = self.get_octants(pred, self.Q)
-            os_pt = self.get_octants(true, self.Q)
-        D1 = self.max((os_pp - os_pt).abs())
-        if self.oneway:
-            D = D1
-        else:
-            os_tt = self.get_octants(true, self.U)
-            os_tp = self.get_octants(pred, self.U)
-            D2 = self.max((os_tt - os_tp).abs())
-            D = (D1 + D2) / 2.
-        if self.norm:
-            D = D / float(pred.shape[0])
-        return D
-
-    def softge(self, x, y):
-        return (torch.tanh(10.0 * (x - y)) + 1.0) / 2.0
-
-    def hardge(self, x, y):
-        return torch.ge(x, y).long()
-
-    def get_orthant_matrix(self, d):
-        n_orthants = int(np.power(2, d))
-        x = np.empty((n_orthants, d))
-        for i in range(n_orthants):
-            for j in range(d):
-                x[i, j] = S_(i, np.power(2.0, -j - 2))
-        return x
-
+    ###
+    # calcD functions
+    ###
     def get_orthants(self, x, points):
         N = points.shape[0]
         d = points.shape[1]
@@ -122,6 +112,14 @@ class ddKS(object):
             orthant = torch.sum(membership, dim=0).float() / N
             orthants.append(orthant)
         return torch.stack(orthants, dim=1)
+
+    def get_orthant_matrix(self, d):
+        n_orthants = int(np.power(2, d))
+        x = np.empty((n_orthants, d))
+        for i in range(n_orthants):
+            for j in range(d):
+                x[i, j] = S_(i, np.power(2.0, -j - 2))
+        return x
 
     def get_octants(self, x, points):
         N = points.shape[0]
@@ -155,9 +153,9 @@ class ddKS(object):
         o8 = torch.sum(nx[:, 0, :] * nx[:, 1, :] * nx[:, 2, :], dim=0).float() / N
         # return the stack of octants, should be (n, 8)
         return torch.stack([o1, o2, o3, o4, o5, o6, o7, o8], dim=1)
-
-
-
+    ###
+    #Testing/Validation Functions
+    ###
     def permute(self, pred=None, true=None, J=1_000):
         if pred is None:
             pred = self.pred
@@ -174,3 +172,11 @@ class ddKS(object):
             _true = all_pts[idx2]
             T_[j] = self(_pred, _true)
         return float(torch.sum(T < T_) + 1) / float(J + 2), T, T_
+    ###
+    # Utility Functions
+    ###
+    def softge(self, x, y):
+        return (torch.tanh(10.0 * (x - y)) + 1.0) / 2.0
+
+    def hardge(self, x, y):
+        return torch.ge(x, y).long()

@@ -16,18 +16,24 @@ Not Yet Implemented:
 
 class vndKS(ddKS):
     def __init__(self, soft=False, T=0.1, method='all', n_test_points=10,
-                 pts=None, norm=False, oneway=True, numVoxel=None, d=3, bounds=[], approx=True):
+                 pts=None, norm=False, oneway=True, numVoxel=None, d=3, bounds=[], dataBounds=True, approx=True):
         super().__init__(soft, T, method, n_test_points,
-                 pts, norm, oneway)
-        #If Number of voxels/dimension is not specified then assume 10/dimension
+                         pts, norm, oneway)
+        # If Number of voxels/dimension is not specified then assume 10/dimension
         if numVoxel is None:
             self.numVoxel = (10 * torch.ones(d)).long()
         else:
             self.numVoxel = numVoxel
         self.bounds = bounds
         self.approx = True
+        self.dataBounds = True
 
     def setup(self, pred, true):
+        '''
+        Set Bounds using pred/true if dataBounds=False
+        Normalize data to be between 0 and 1 using bounds
+        Fill voxels
+        '''
         self.pred = pred
         self.true = true
         self.set_bounds()
@@ -36,7 +42,14 @@ class vndKS(ddKS):
         self.normalize_data()
         self.fill_voxels()
 
-    def calcD(self, pred,true):
+    def calcD(self, pred, true):
+        '''
+        If approx==True don't look inside voxels for D calculation
+        If approx==False do in-voxel comparisons
+        :param pred: data distribution
+        :param true:
+        :return: D, returns ddks distance
+        '''
         D = 0
         if self.approx:
             for v_id in self.voxel_list.keys():
@@ -48,9 +61,13 @@ class vndKS(ddKS):
             for v_id in self.voxel_list.keys():
                 print("Not Implemented")
 
+    ###
+    # Setup sub-Functions
+    ###
     def set_bounds(self):
         # If no bounds are specified use data to figure out bounds
-        if len(self.bounds) != 0:
+        if (len(self.bounds) != 0) and not self.dataBounds:
+            print("Reusing old/initilized bounds")
             return
         lb_p = torch.min(self.pred, dim=0).values
         ub_p = torch.max(self.pred, dim=0).values
@@ -68,9 +85,6 @@ class vndKS(ddKS):
         # Force Data to be between (0..1)*numvoxels
         self.pred = self.numvoxel * (self.pred - self.bounds[0, :]) / (self.max_bounds + 1e-4)
         self.true = self.numvoxel * (self.true - self.bounds[0, :]) / (self.max_bounds + 1e-4)
-
-    def get_voxel_index(self, pt):
-        return tuple(pt.long())
 
     def fill_voxels(self):
         '''
@@ -94,8 +108,12 @@ class vndKS(ddKS):
                 self.voxel_list[ids] = [pt_id]
             else:
                 self.voxel_list[ids].append(pt_id)
-        self.diff = self.true_vox / self.true.shape[0] - self.pred_vox / self.pred.shape[0]  # Calculate difference in voxels
+        self.diff = self.true_vox / self.true.shape[0] - self.pred_vox / self.pred.shape[
+            0]  # Calculate difference in voxels
 
+    ###
+    # calcD subfunctions
+    ###
     def get_index(self, v_id):
         ## Take in index to sum around spit out list of indicies
         inds = []
@@ -120,38 +138,16 @@ class vndKS(ddKS):
         return V2 - V1
 
     def get_inside(self, x, points):
-        N = points.shape[0]
-        # shape our input and test points into the right shape (N, 3, 1)
-        x = x.unsqueeze(-1)
-        points = points.unsqueeze(-1)
-        # repeat each input point in the dataset across the third dimension
-        x = x.repeat((1, 1, points.shape[0]))
-        # repeate each test in the dataset across the first dimension
-        comp_x = points.repeat((1, 1, x.shape[0]))
-        comp_x = comp_x.permute((2, 1, 0))
-        # now compare the input points and comparison points to see how many
-        # are bigger and smaller
-        x = self.ge(x, comp_x)
-        nx = (1 - torch.clone(x)).abs()
-        # now use the comparisoned points to construct each octant (& is logical and)
-        # nd = torch.pow(2, len(x.shape[1]))
-        # os = torch.empty((n, x.shape[1], nd))
-        # os = []
-        # for i in nd:
-        #    _o = torch.ones((x.shape[0]))
-        #    for j in range(x.shape[1]):
-        #        _o *= x[:, j, :]
-        o1 = torch.sum(x[:, 0, :] * x[:, 1, :] * x[:, 2, :], dim=0).float() / N
-        o2 = torch.sum(x[:, 0, :] * x[:, 1, :] * nx[:, 2, :], dim=0).float() / N
-        o3 = torch.sum(x[:, 0, :] * nx[:, 1, :] * x[:, 2, :], dim=0).float() / N
-        o4 = torch.sum(x[:, 0, :] * nx[:, 1, :] * nx[:, 2, :], dim=0).float() / N
-        o5 = torch.sum(nx[:, 0, :] * x[:, 1, :] * x[:, 2, :], dim=0).float() / N
-        o6 = torch.sum(nx[:, 0, :] * x[:, 1, :] * nx[:, 2, :], dim=0).float() / N
-        o7 = torch.sum(nx[:, 0, :] * nx[:, 1, :] * x[:, 2, :], dim=0).float() / N
-        o8 = torch.sum(nx[:, 0, :] * nx[:, 1, :] * nx[:, 2, :], dim=0).float() / N
-        # return the stack of octants, should be (n, 8)
-        return torch.stack([o1, o2, o3, o4, o5, o6, o7, o8], dim=1)
+        '''
+        Calculate the exact orthants for points
+        :param x:
+        :param points:
+        :return:
+        '''
 
+    ###
+    # Testing/Validation functions
+    ###
     def permute(self, J=1_000):
         all_pts = torch.cat((self.pred, self.true), dim=0)
         T = self(self.pred, self.true)
