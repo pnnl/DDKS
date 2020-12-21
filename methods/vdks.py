@@ -1,4 +1,4 @@
-from methods.ddks import ddKS
+from .ddks import ddKS
 import torch
 import warnings
 
@@ -14,7 +14,7 @@ Not Yet Implemented:
 '''
 
 
-class vndKS(ddKS):
+class vdKS(ddKS):
     def __init__(self, soft=False, T=0.1, method='all', n_test_points=10,
                  pts=None, norm=False, oneway=True, numVoxel=None, d=3, bounds=[], dataBounds=True, approx=True):
         super().__init__(soft, T, method, n_test_points,
@@ -36,6 +36,7 @@ class vndKS(ddKS):
         '''
         self.pred = pred
         self.true = true
+        self.d    = pred.shape[1]
         self.set_bounds()
         if pred.shape[1] != true.shape[1] or pred.shape[1] != self.bounds.shape[1]:
             warnings.warn(f'Dimension Mismatch between d1,d2,bounds')
@@ -82,9 +83,9 @@ class vndKS(ddKS):
         return
 
     def normalize_data(self):
-        # Force Data to be between (0..1)*numvoxels
-        self.pred = self.numvoxel * (self.pred - self.bounds[0, :]) / (self.max_bounds + 1e-4)
-        self.true = self.numvoxel * (self.true - self.bounds[0, :]) / (self.max_bounds + 1e-4)
+        # Force Data to be between (0..1)*numVoxels
+        self.pred = self.numVoxel * (self.pred - self.bounds[0, :]) / (self.max_bounds + 1e-4)
+        self.true = self.numVoxel * (self.true - self.bounds[0, :]) / (self.max_bounds + 1e-4)
 
     def fill_voxels(self):
         '''
@@ -101,7 +102,7 @@ class vndKS(ddKS):
                 self.voxel_list[ids] = [pt_id]
             else:
                 self.voxel_list[ids].append(pt_id)
-        for pt_id, ids in enumerate(self.d2.long()):
+        for pt_id, ids in enumerate(self.true.long()):
             ids = tuple(ids)
             self.true_vox[ids] += 1
             if ids not in self.voxel_list:
@@ -131,8 +132,8 @@ class vndKS(ddKS):
 
     def calc_voxel_inside(self, pt, v_id):
         ## Take in point and generate octant values for inside voxel
-        d1_pts = self.d1[self.voxel_list[v_id][:self.d1_vox[v_id]]]
-        d2_pts = self.d2[self.voxel_list[v_id][self.d1_vox[v_id]:]]
+        d1_pts = self.pred[self.voxel_list[v_id][:self.pred_vox[v_id]]]
+        d2_pts = self.true[self.voxel_list[v_id][self.pred_vox[v_id]:]]
         V1 = self.get_inside(pt, d1_pts)
         V2 = self.get_inside(pt, d2_pts)
         return V2 - V1
