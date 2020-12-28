@@ -56,6 +56,12 @@ class rdKS(ddKS):
                 test_point_index += 1
         return os
     def find_corners(self, x1, x2):
+        '''
+        Creates corners to calculate distance from 
+        :param x1: data set 1
+        :param x2: data set 2
+        :return:
+        '''
         cs = torch.empty((2**self.d,self.d))
         x1_min,_ = torch.min(x1,dim=0)
         x2_min,_ = torch.min(x2,dim=0)

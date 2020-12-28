@@ -38,12 +38,22 @@ def quick_test(pred, true, xdks):
     print(f'{name}:{D}, time: {runtime}')
     return D, runtime
 
+def data_gen(n, d):
+    '''
+    Method for generating data consider using methods from ddks.data
+    :param n: Number of entries
+    :param d: dimension of data
+    :return:
+    '''
+    return torch.rand((n, d))
 
+
+pred = data_gen(100,5)
+true = data_gen(100,5)
 
 quick_test(pred,true,ddks)
 quick_test(pred,true,vdks)
 quick_test(pred,true,rdks)
-
 
 
 
