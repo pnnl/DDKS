@@ -2,6 +2,7 @@ import torch
 import numpy as np
 '''
 Generate Toy problem dataset 
+Add variation currently not working
 '''
 
 

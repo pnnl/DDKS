@@ -42,6 +42,7 @@ def make_true(N=100,device=torch.device("cpu")):
     true = true[idx, :]
     labels = labels[idx, :]
     return true
+
 class Cone(object):
     def __init__(self, phi, x=0.0, y=0.0, background=False, bounds=[-100.0, 100.0, -100.0, 100.0], n_per=10):
         self.n_per = 10

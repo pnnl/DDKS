@@ -11,7 +11,7 @@ voxel ddks (vdks) is being frequently updated please email/message Shane Jackson
 1. data - Distribution generators should go here
 2. figs - Figure generators should go here
 3. methods - ddks +variants code (currently radial/rigorous/voxel methods)
-
+4. tests - test_methods has a quick test to verify methods run. Also includes multiprocessing script for many run tests  
 ### To-do List
 Please add things here as you think of them. 
 

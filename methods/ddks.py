@@ -136,13 +136,6 @@ class ddKS(object):
         x = self.ge(x, comp_x)
         nx = (1 - torch.clone(x)).abs()
         # now use the comparisoned points to construct each octant (& is logical and)
-        # nd = torch.pow(2, len(x.shape[1]))
-        # os = torch.empty((n, x.shape[1], nd))
-        # os = []
-        # for i in nd:
-        #    _o = torch.ones((x.shape[0]))
-        #    for j in range(x.shape[1]):
-        #        _o *= x[:, j, :]
         o1 = torch.sum(x[:, 0, :] * x[:, 1, :] * x[:, 2, :], dim=0).float() / N
         o2 = torch.sum(x[:, 0, :] * x[:, 1, :] * nx[:, 2, :], dim=0).float() / N
         o3 = torch.sum(x[:, 0, :] * nx[:, 1, :] * x[:, 2, :], dim=0).float() / N

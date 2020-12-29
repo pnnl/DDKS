@@ -6,7 +6,7 @@ import torch
 import time
 
 #Generate sample dataset
-N = 1000
+N = 1
 Nper = 1
 dim = 3
 input_bounds = torch.tensor([[0,1],[0,1],[0,1], [0,1],[0,1],[0,1]]).T
@@ -18,9 +18,6 @@ split = N//2
 pred = dset[:split,-3:]
 true = dset[split:,-3:]
 
-ddks = m.ddKS()
-vdks = m.vdKS()
-rdks = m.rdKS()
 
 def quick_test(pred, true, xdks):
     '''
@@ -48,8 +45,14 @@ def data_gen(n, d):
     return torch.rand((n, d))
 
 
-pred = data_gen(100,5)
-true = data_gen(100,5)
+ddks = m.ddKS()
+vdks = m.vdKS(vox_per_dim=3)
+rdks = m.rdKS()
+
+d=7
+N = 1000
+pred = data_gen(N,d)
+true = data_gen(N,d)
 
 quick_test(pred,true,ddks)
 quick_test(pred,true,vdks)

@@ -16,18 +16,15 @@ Not Yet Implemented:
 
 class vdKS(ddKS):
     def __init__(self, soft=False, T=0.1, method='all', n_test_points=10,
-                 pts=None, norm=False, oneway=True, numVoxel=None, d=3, bounds=[], dataBounds=True, approx=True):
+                 pts=None, norm=False, oneway=True, numVoxel=None, vox_per_dim=10, bounds=[], dataBounds=True, approx=True):
         super().__init__(soft, T, method, n_test_points,
                          pts, norm, oneway)
         # If Number of voxels/dimension is not specified then assume 10/dimension
-        if numVoxel is None:
-            self.numVoxel = (10 * torch.ones(d)).long()
-        else:
-            self.numVoxel = numVoxel
+        self.numVoxel = numVoxel
         self.bounds = bounds
         self.approx = True
         self.dataBounds = True
-
+        self.vox_per_dim = vox_per_dim
     def setup(self, pred, true):
         '''
         Set Bounds using pred/true if dataBounds=False
@@ -37,6 +34,8 @@ class vdKS(ddKS):
         self.pred = pred
         self.true = true
         self.d    = pred.shape[1]
+        if self.numVoxel is None:
+            self.numVoxel = (self.vox_per_dim * torch.ones(self.d)).long()
         self.set_bounds()
         if pred.shape[1] != true.shape[1] or pred.shape[1] != self.bounds.shape[1]:
             warnings.warn(f'Dimension Mismatch between d1,d2,bounds')
@@ -60,6 +59,7 @@ class vdKS(ddKS):
             return D
         else:
             for v_id in self.voxel_list.keys():
+                #For each v_id
                 print("Not Implemented")
 
     ###
