@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/Users/jack755/PycharmProjects/')
+sys.path.append('/Users/jack755/PycharmProjects/ddks')
 import ddks
 import ddks.methods as m
 import torch

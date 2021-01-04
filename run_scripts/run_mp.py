@@ -1,10 +1,11 @@
 import sys
-sys.path.append('/Users/jack755/PycharmProjects/')
+sys.path.append('/Users/jack755/PycharmProjects/ddks/')
 import ddks
 import ddks.methods as m
 import ddks.tests as t
 import ddks.data as d
 import torch
+import numpy as np
 
 def data_gen(n, d):
     '''
@@ -18,6 +19,12 @@ def data_gen(n, d):
 if __name__=='__main__':
     rdks = m.rdKS()
     vdks = m.vdKS()
-    vals,mns,std,ns = t.run_mp([rdks,vdks],data_gen)
+    vals = t.run_mp([rdks,vdks],data_gen,nmax=1e4)
+
+    rval =vals[vals['name'] == 'rdKS']['D'].values
+    vval = vals[vals['name'] == 'vdKS']['D'].values
+
+    rval = np.asarray([list(rval[i]) for i in range(10)])
+    vval = np.asarray([list(vval[i]) for i in range(10)])
     print(vals)
     print(mns)

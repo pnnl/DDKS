@@ -2,7 +2,7 @@ import time
 import multiprocessing
 import numpy as np
 import tqdm
-
+from pandas import DataFrame
 def F(true,pred,xdks):
     '''
     Running the xdks test of choice
@@ -28,7 +28,7 @@ def run_mp(dks_list,data_gen1,d=3,data_gen2=None, nper=10,name_list = None,nmax=
     :param nper: OPTIONAL (default 10) Number of runs with fixed n
     :param name_list: OPTIONAL (default = xdks.name) Specify to label output data
     :param nmax: (default 10E4)  Largest dataset values generated
-    :return: vals (List of lists for values) mns timing values stds error in times
+    :return: df_vals dataframe with D,Time values
     '''
     #if single ddks method is provided, convert to list
     if type(dks_list) != type([]):
@@ -63,11 +63,12 @@ def run_mp(dks_list,data_gen1,d=3,data_gen2=None, nper=10,name_list = None,nmax=
             for res in tqdm.tqdm(ress):
                 store.append(res.get())
             store = np.asarray(store)
-            vals.append([name, n, store[:, 0]])
+            vals.append([name, n, store[:, 0],store[:,1]])
+            df_vals = DataFrame(vals,columns=['name','n','D','T'])
             ns.append(n)
             mns.append(np.mean(store[:, 1]))
             std.append(np.std(store[:, 1]))
-    return(vals,mns,std,ns)
+    return(df_vals)
 
 
 
