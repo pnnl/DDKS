@@ -24,7 +24,7 @@ def F_perm(true,pred,xdks):
     toc = time.time()
     return [D, toc - tic, p]
 
-def run_mp(dks_list,data_gen1,d=3,data_gen2=None, nper=10,name_list = None,nmax=10E4,calc_P=False):
+def run_mp(dks_list,data_gen1,d=3,data_gen2=None, nper=10,name_list = None,nmin=10,nmax=10E4,nsteps=10,calc_P=False):
     '''
     Times and runs a list of xdks methods using 10 sets of data ranging geometrically from n=10..nmax
     :param dks_list: List of xdks methods
@@ -52,7 +52,7 @@ def run_mp(dks_list,data_gen1,d=3,data_gen2=None, nper=10,name_list = None,nmax=
     Fun=F
     if calc_P == True:
         Fun=F_perm
-    for n in np.geomspace(10, nmax, 10):
+    for n in np.geomspace(nmin, nmax, nsteps):
         n = int(n)
         p_list = [data_gen1(n,d) for i in range(nper)]
         t_list = [data_gen2(n, d) for i in range(nper)]
@@ -121,6 +121,10 @@ def run_mpDims(dks_list, data_gen1, d_list, data_gen2=None, nper=10,name_list=No
             vals.append([name, n,d, store[:, 0], store[:, 1]])
             df_vals = DataFrame(vals, columns=['name', 'n', 'd', 'D', 'T'])
     return (df_vals)
+
+
+
+
 
     '''        
         print(mns)

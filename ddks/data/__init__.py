@@ -9,5 +9,4 @@ Multimodal gaussians?
 
 from .cone import  Cone
 from .smalldata import SmallDataSet
-
-
+from .cone import make_true
