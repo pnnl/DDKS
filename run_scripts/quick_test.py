@@ -23,19 +23,14 @@ if __name__=='__main__':
     ddks = m.ddKS()
     pdks = m.pdKS()
     m1 = 0.0
-    m2 = 0.0
+    m2 = 0.1
     std1 = 1.0
-    std2 = 2.0
+    std2 = 1.0
     data_gen = set_dgen(m1,std1)
     data_gen2 = set_dgen(m2,std2)
-    d=3
-    vals = t.run_mp([pdks, rdks, vdks, ddks],data_gen,d=3,data_gen2=data_gen2,nper=10,nmax=1e4)
-    vals.to_pickle(f'./{d}d_prvdks_N{m1}{std1}_N{m2}{std2}.pkl')
 
-    #vals = t.run_mp([rdks, vdks, ddks], data_gen, d=3, data_gen2=data_gen2, nper=10, nmax=1e4)
-    #vals.to_pickle(f'./{d}d_rvdks_N{m1}{std1}_N{m2}{std2}.pkl')
-
-    #dvals = t.run_mpDims([rdks,vdks,ddks], data_gen, [2,3,4,5,6,7], n=100)
-    #dvals.to_pickle(f'./nd_rvdks_Nm1}{std1}_N{m2}{std2}')
+    dvals = t.run_mpDims([pdks], data_gen, [1000], n=100)
+    print(dvals)
+    dvals.to_pickle(f'./QT2.pkl')
     #vals = t.run_mp([vdks,rdks],data_gen,d=3,data_gen2=data_gen2,nper=10,nmax=1e4,calc_P=True)
     #vals.to_pickle(f'./Perm2_{d}d_rks_N{m1}{std1}_N{m2}{std2}.pkl')

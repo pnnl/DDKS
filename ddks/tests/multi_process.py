@@ -17,8 +17,14 @@ def F(true,pred,xdks):
     toc = time.time()
     return [D, toc - tic]
 
+def F_perm(true,pred,xdks):
+    tic = time.time()
+    D = xdks(true, pred)
+    p,_,_ = xdks.permute(true,pred,J=10)
+    toc = time.time()
+    return [D, toc - tic, p]
 
-def run_mp(dks_list,data_gen1,d=3,data_gen2=None, nper=10,name_list = None,nmax=10E4):
+def run_mp(dks_list,data_gen1,d=3,data_gen2=None, nper=10,name_list = None,nmax=10E4,calc_P=False):
     '''
     Times and runs a list of xdks methods using 10 sets of data ranging geometrically from n=10..nmax
     :param dks_list: List of xdks methods
@@ -42,11 +48,10 @@ def run_mp(dks_list,data_gen1,d=3,data_gen2=None, nper=10,name_list = None,nmax=
     #Setup multiprocessing pool
     p = multiprocessing.Pool(min([nper,multiprocessing.cpu_count()]))
     # Setup data method
-    mns = []
-    std = []
-    ns = []
     vals = []
-
+    Fun=F
+    if calc_P == True:
+        Fun=F_perm
     for n in np.geomspace(10, nmax, 10):
         n = int(n)
         p_list = [data_gen1(n,d) for i in range(nper)]
@@ -58,20 +63,64 @@ def run_mp(dks_list,data_gen1,d=3,data_gen2=None, nper=10,name_list = None,nmax=
             for i in range(nper):
                 pred = p_list[i]
                 true = t_list[i]
-                res = p.apply_async(F, args=(pred, true, xdks))
+                res = p.apply_async(Fun, args=(pred, true, xdks))
                 ress.append(res)
             for res in tqdm.tqdm(ress):
-                store.append(res.get())
+                store.append(np.asarray(res.get()))
             store = np.asarray(store)
-            vals.append([name, n, store[:, 0],store[:,1]])
-            df_vals = DataFrame(vals,columns=['name','n','D','T'])
-            ns.append(n)
-            mns.append(np.mean(store[:, 1]))
-            std.append(np.std(store[:, 1]))
+            if calc_P == True:
+                vals.append([name, n, d, store[:, 0],store[:,1],store[:,2]])
+                df_vals = DataFrame(vals,columns=['name','n','d','D','T','p'])
+            else:
+                vals.append([name, n, d, store[:, 0], store[:, 1]])
+                df_vals = DataFrame(vals, columns=['name', 'n','d', 'D', 'T'])
     return(df_vals)
 
-
-
+def run_mpDims(dks_list, data_gen1, d_list, data_gen2=None, nper=10,name_list=None, n=100):
+    '''
+    Times and runs a list of xdks methods using 10 sets of data ranging geometrically from n=10..nmax
+    :param dks_list: List of xdks methods
+    :param data_gen1: Method to generate pred/true dists
+    :param d: dimension of system
+    :param data_gen2: OPTIONAL if not provided data_gen1=data_gen2
+    :param nper: OPTIONAL (default 10) Number of runs with fixed n
+    :param name_list: OPTIONAL (default = xdks.name) Specify to label output data
+    :param nmax: (default 10E4)  Largest dataset values generated
+    :return: df_vals dataframe with D,Time values
+    '''
+    # if single ddks method is provided, convert to list
+    if type(dks_list) != type([]):
+        dks_list = [dks_list]
+    if type(d_list) != type([]):
+        d_list = [d_list]
+    # Check if two data_gen functions are provided
+    if name_list is None:
+        name_list = [xdks.__class__.__name__ for xdks in dks_list]
+    if data_gen2 is None:
+        data_gen2 = data_gen1
+    # Setup multiprocessing pool
+    p = multiprocessing.Pool(min([nper, multiprocessing.cpu_count()]))
+    vals = []
+    Fun = F
+    for d in d_list:
+        d = int(d)
+        p_list = [data_gen1(n, d) for i in range(nper)]
+        t_list = [data_gen2(n, d) for i in range(nper)]
+        for xdks, name in zip(dks_list, name_list):
+            store = []
+            ress = []
+            print(f'Running {name} for n={n}')
+            for i in range(nper):
+                pred = p_list[i]
+                true = t_list[i]
+                res = p.apply_async(Fun, args=(pred, true, xdks))
+                ress.append(res)
+            for res in tqdm.tqdm(ress):
+                store.append(np.asarray(res.get()))
+            store = np.asarray(store)
+            vals.append([name, n,d, store[:, 0], store[:, 1]])
+            df_vals = DataFrame(vals, columns=['name', 'n', 'd', 'D', 'T'])
+    return (df_vals)
 
     '''        
         print(mns)
