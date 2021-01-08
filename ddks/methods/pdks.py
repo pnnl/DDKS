@@ -97,7 +97,7 @@ class pdKS(ddKS):
         self.diff[:,0,2] = self.diff[:,1:,0].sum(axis=1)
         for p in range(1, self.plane_per_dim):
             self.diff[:, p, 1] = self.diff[:, p-1, 0]+self.diff[d, p-1, 1]
-            self.diff[:, p, 2] = self.diff[:, p, 0]+self.diff[d, p-1, 2]
+            self.diff[:, p, 2] = self.diff[d, p-1, 2]-self.diff[:, p, 0]
 
 
 

@@ -1,6 +1,6 @@
 import sys
 sys.path.append('/Users/jack755/PycharmProjects/ddks/')
-import ddks
+import Ddks
 import ddks.methods as m
 import ddks.tests as t
 import ddks.data as d
@@ -23,9 +23,9 @@ def set_dgen_poisson(scale):
     def dgen(n,d):
         return torch.poisson(torch.ones(n,d)*scale)
 def bgcone_wrap(n,d):
-    return ddks.data.Cone(n)
+    return Ddks.Cone(n)
 def cone_wrap(n,d):
-    return ddks.data.make_true(n)
+    return Ddks.make_true(n)
 
 
 if __name__=='__main__':
@@ -46,9 +46,9 @@ if __name__=='__main__':
 
     #Dimensionality scaling for all + pdks + P scaling for pdks
     dvals = t.run_mpDims([pdks,rdks,ddks], data_gen, [2,3,4,5,6,7], n=100)
-    dvals.to_pickle(f'./nd_prdks_Nm1}{std1}_N{m2}{std2}')
+    dvals.to_pickle(f'./nd_prdks_N{m1}{std1}_N{m2}{std2}.pkl')
     dvals = t.run_mpDims([pdks], data_gen, [3, 10, 100, 200, 500, 800, 1000], n=100)
-    dvals.to_pickle(f'./nd_pks_Nm1}{std1}_N{m2}{std2}')
+    dvals.to_pickle(f'./nd_pks_N{m1}{std1}_N{m2}{std2}.pkl')
     p5 = m.pdKS(plane_per_dim=5)
     p10 = m.pdKS(plane_per_dim=10)
     p25 = m.pdKS(plane_per_dim=25)
