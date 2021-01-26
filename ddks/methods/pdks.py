@@ -115,4 +115,5 @@ class pdKS(ddKS):
             _d1 = all_pts[idx1]
             _d2 = all_pts[idx2]
             T_[j] = self(_d1, _d2)
-        return torch.sum(T_ > T) / float(J), T, T_
+        return float(torch.sum(T < T_) + 1) / float(J + 2), T, T_
+        #return torch.sum(T_ > T) / float(J), T, T_
