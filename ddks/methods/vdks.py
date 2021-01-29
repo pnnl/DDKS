@@ -53,13 +53,26 @@ class vdKS(ddKS):
         D = 0
         if self.approx:
             for v_id in self.voxel_list.keys():
+                v_id = v_id[1]
                 V_tmp = torch.max(self.calc_voxel_oct(v_id))
                 if V_tmp > D:
                     D = V_tmp
             return D
         else:
             for v_id in self.voxel_list.keys():
-                #For each v_id
+                # Look inside v_id
+                # Calculate once per v_id: contributions to ddks orthants from all other voxels
+                # Calculate ddks inside voxel with contributions added in(optionally also parallel to voxels for exact)
+                # Imo it might be worth not going "full exact" and splitting the counts of parallel voxels but we can
+                # talk about it
+                # v_id = (X,point_id): X=0 - > Pred X=1, True)
+                # p=voxel_list[v_id][0] = List of pred Particles
+                # t=voxel_list[v_id][1] = List of true Particles
+                # for x in p,t:
+                #   get_orthants(x,t)  (inhereted from ddKS)
+                #   get_orthants(x,p)
+                #
+                #
                 print("Not Implemented")
 
     ###
@@ -99,16 +112,16 @@ class vdKS(ddKS):
             ids = tuple(ids)
             self.pred_vox[ids] += 1
             if ids not in self.voxel_list:
-                self.voxel_list[ids] = [pt_id]
+                self.voxel_list[ids] = ([pt_id],[])
             else:
-                self.voxel_list[ids].append(pt_id)
+                self.voxel_list[ids][0].append(pt_id)
         for pt_id, ids in enumerate(self.true.long()):
             ids = tuple(ids)
             self.true_vox[ids] += 1
             if ids not in self.voxel_list:
-                self.voxel_list[ids] = [pt_id]
+                self.voxel_list[ids] = ([],[pt_id])
             else:
-                self.voxel_list[ids].append(pt_id)
+                self.voxel_list[ids][1].append(pt_id)
         self.diff = self.true_vox / self.true.shape[0] - self.pred_vox / self.pred.shape[
             0]  # Calculate difference in voxels
 

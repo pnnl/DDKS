@@ -4,7 +4,7 @@ import warnings
 
 class pdKS(ddKS):
     def __init__(self, soft=False, T=0.1, method='all', n_test_points=10,
-                 pts=None, norm=False, oneway=True, plane_per_dim=10, bounds=[], dataBounds=True, approx=True):
+                 pts=None, norm=False, oneway=True, plane_per_dim=10, bounds=[], covariance_planes=False,dataBounds=True, approx=True):
         super().__init__(soft, T, method, n_test_points,
                          pts, norm, oneway)
         # If Number of voxels/dimension is not specified then assume 10/dimension
@@ -13,6 +13,7 @@ class pdKS(ddKS):
         self.approx = True
         self.dataBounds = True
         self.plane_per_dim = plane_per_dim
+        self.covariance_planes = covariance_planes
     def setup(self, pred, true):
         '''
         Set Bounds using pred/true if dataBounds=False
