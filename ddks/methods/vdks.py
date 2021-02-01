@@ -12,6 +12,8 @@ Should work as is in n-dimensions (untested currently)
 Not Yet Implemented: 
     Sparse matricies to deal with higher dimensional empty voxels
 '''
+ddks = ddKS()
+
 
 
 class vdKS(ddKS):
@@ -22,7 +24,7 @@ class vdKS(ddKS):
         # If Number of voxels/dimension is not specified then assume 10/dimension
         self.numVoxel = numVoxel
         self.bounds = bounds
-        self.approx = True
+        self.approx = approx
         self.dataBounds = True
         self.vox_per_dim = vox_per_dim
     def setup(self, pred, true):
@@ -35,6 +37,7 @@ class vdKS(ddKS):
         self.true = true
         self.d    = pred.shape[1]
         if self.numVoxel is None:
+            print(f"generating {self.vox_per_dim} vox/dim")
             self.numVoxel = (self.vox_per_dim * torch.ones(self.d)).long()
         self.set_bounds()
         if pred.shape[1] != true.shape[1] or pred.shape[1] != self.bounds.shape[1]:
@@ -53,8 +56,7 @@ class vdKS(ddKS):
         D = 0
         if self.approx:
             for v_id in self.voxel_list.keys():
-                v_id = v_id[1]
-                V_tmp = torch.max(self.calc_voxel_oct(v_id))
+                V_tmp = torch.max(torch.abs(self.calc_voxel_oct(v_id)))
                 if V_tmp > D:
                     D = V_tmp
             return D
@@ -71,9 +73,30 @@ class vdKS(ddKS):
                 # for x in p,t:
                 #   get_orthants(x,t)  (inhereted from ddKS)
                 #   get_orthants(x,p)
-                #
-                #
-                print("Not Implemented")
+                ps,ts = self.voxel_list[v_id]
+                #print(f'Looking at {v_id}')
+
+                if not ps or not ts:
+                    continue
+                p = self.pred[ps]
+                t = self.true[ts]
+                #print(p.shape)
+                #print(t.shape)
+                os_pp = self.get_orthants(p, p)
+                os_tp = self.get_orthants(t, p)
+                tmp_diff = len(ts)/self.true.shape[0]*os_tp-os_pp*len(ps)/self.pred.shape[0]
+                print(torch.max(tmp_diff))
+                V_tmp = torch.max(torch.abs(tmp_diff + self.calc_voxel_oct(v_id)))
+                if V_tmp > D:
+                    D = V_tmp
+            return D
+
+                #os_tt = self.get_orthatns(t, t)
+                #os_tp = self.get_orthatns(t, p)
+
+
+
+
 
     ###
     # Setup sub-Functions
@@ -109,14 +132,16 @@ class vdKS(ddKS):
         self.pred_vox = torch.zeros([int(x) for x in self.numVoxel])
         self.true_vox = torch.zeros([int(x) for x in self.numVoxel])
         for pt_id, ids in enumerate(self.pred.long()):
-            ids = tuple(ids)
+            #ids = tuple(ids)
+            ids = tuple(int(x) for x in ids)
             self.pred_vox[ids] += 1
             if ids not in self.voxel_list:
                 self.voxel_list[ids] = ([pt_id],[])
             else:
                 self.voxel_list[ids][0].append(pt_id)
         for pt_id, ids in enumerate(self.true.long()):
-            ids = tuple(ids)
+            #ids = tuple(ids)
+            ids = tuple(int(x) for x in ids)
             self.true_vox[ids] += 1
             if ids not in self.voxel_list:
                 self.voxel_list[ids] = ([],[pt_id])
@@ -141,7 +166,7 @@ class vdKS(ddKS):
         ## Calculate
         inds = self.get_index(v_id)
         V_bin = [self.diff[inds[i]].sum() for i in range(2 ** self.d)]
-        return abs(torch.tensor(V_bin))
+        return torch.tensor(V_bin)
 
     def calc_voxel_inside(self, pt, v_id):
         ## Take in point and generate octant values for inside voxel
@@ -158,6 +183,7 @@ class vdKS(ddKS):
         :param points:
         :return:
         '''
+        ddks(p)
 
     ###
     # Testing/Validation functions

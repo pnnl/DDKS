@@ -36,7 +36,8 @@ def samp2(n,d):
 
 if __name__=='__main__':
     rdks = m.rdKS()
-    vdks = m.vdKS()
+    vdks = m.vdKS(vox_per_dim=2)
+    vdks2 = m.vdKS(approx=False,vox_per_dim=1)
     ddks = m.ddKS()
     pdks = m.pdKS()
     m1 = 0.0
@@ -50,8 +51,10 @@ if __name__=='__main__':
     p50 = m.pdKS(plane_per_dim=50)
     data_gen = samp1
     data_gen2 = samp2
-    name_list = ['ddKS', 'p10', 'p50']
-    vals = t.run_mp([ddks, p10, p50], data_gen, d=3, data_gen2=data_gen2, nper=10, nmin=1E3,
+    name_list = ['ddKS', 'vdks', 'vdks_NA']
+    #name_list = [ 'vdks', 'vdks_NA']
+    #name_list = ['vdks_NA']
+    vals = t.run_mp([ddks,vdks,vdks2], data_gen, d=3, data_gen2=data_gen2, nper=1, nmin=1E3,
                     nmax=1E3,
                     nsteps=1, name_list=name_list)
     print(vals)
