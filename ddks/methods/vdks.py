@@ -27,6 +27,8 @@ class vdKS(ddKS):
         self.approx = approx
         self.dataBounds = True
         self.vox_per_dim = vox_per_dim
+        self.orth_key={}
+
     def setup(self, pred, true):
         '''
         Set Bounds using pred/true if dataBounds=False
@@ -61,6 +63,7 @@ class vdKS(ddKS):
                     D = V_tmp
             return D
         else:
+            self.set_orth_key()
             for v_id in self.voxel_list.keys():
                 # Look inside v_id
                 # Calculate once per v_id: contributions to ddks orthants from all other voxels
@@ -82,8 +85,10 @@ class vdKS(ddKS):
                 t = self.true[ts]
                 #print(p.shape)
                 #print(t.shape)
-                os_pp = self.get_orthants(p, p)
-                os_tp = self.get_orthants(t, p)
+                #os_pp = self.get_orthants(p, p)
+                #os_tp = self.get_orthants(t, p)
+                os_pp = self.get_orth2(p, p)
+                os_tp = self.get_orth2(t, p)
                 tmp_diff = len(ts)/self.true.shape[0]*os_tp-os_pp*len(ps)/self.pred.shape[0]
                 print(torch.max(tmp_diff))
                 V_tmp = torch.max(torch.abs(tmp_diff + self.calc_voxel_oct(v_id)))
@@ -161,7 +166,10 @@ class vdKS(ddKS):
             ind = [slice(v_id[i]) if c == '0' else slice(v_id[i] + 1, None) for i, c in enumerate(bitstring)]
             inds.append(ind)
         return inds
-
+    def set_orth_key(self):
+        for n in range(2**self.d):
+            bitstring = format(n, f'0{self.d}b')
+            self.orth_key[bitstring] = n
     def calc_voxel_oct(self, v_id):
         ## Calculate
         inds = self.get_index(v_id)
@@ -176,14 +184,25 @@ class vdKS(ddKS):
         V2 = self.get_inside(pt, d2_pts)
         return V2 - V1
 
-    def get_inside(self, x, points):
-        '''
-        Calculate the exact orthants for points
-        :param x:
-        :param points:
-        :return:
-        '''
-        ddks(p)
+    def get_orth2(self,x,points):
+        orthants = []
+        for x1 in x:
+            tmp_pts = points-x1
+            orth = torch.zeros((2**self.d))
+            for pt in tmp_pts:
+                ind = self.pt2indx(pt)
+                orth[ind] +=1
+            orthants.append(orth)
+        return torch.stack(orthants)/points.shape[0]
+
+    def pt2indx(self,pt):
+        bs=''
+        for x in pt:
+            if x <=0:
+                bs+='0'
+            else:
+                bs+='1'
+        return(self.orth_key[bs])
 
     ###
     # Testing/Validation functions
