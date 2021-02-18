@@ -36,6 +36,8 @@ class ddKS(object):
         :param true:
         :return:
         '''
+        self.pred = pred
+        self.true = true
         self.setup(pred,true)
         D = self.calcD(pred, true)
         return D

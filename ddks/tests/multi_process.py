@@ -20,7 +20,7 @@ def F(true,pred,xdks):
 def F_perm(true,pred,xdks):
     tic = time.time()
     D = xdks(true, pred)
-    p,_,_ = xdks.permute(true,pred,J=10)
+    p,_,_ = xdks.permute(J=100)
     toc = time.time()
     return [D, toc - tic, p]
 
@@ -55,7 +55,7 @@ def run_mp(dks_list,data_gen1,d=3,data_gen2=None, nper=10,name_list = None,nmin=
 
     for n in np.geomspace(nmin, nmax, nsteps):
         n = int(n)
-        p_list = [data_gen1(n,d) for i in range(nper)]
+        p_list = [data_gen1(n, d) for i in range(nper)]
         t_list = [data_gen2(n, d) for i in range(nper)]
         for xdks, name in zip(dks_list, name_list):
             store = []
@@ -124,8 +124,50 @@ def run_mpDims(dks_list, data_gen1, d_list, data_gen2=None, nper=10,name_list=No
     return (df_vals)
 
 
-
-
+def run_mpGen(dks_list,data_gen1,data_gen2,d1_name,d2_name,d=3,nper=10,name_list = None,nmin=10,nmax=10E4,nsteps=10,calc_P=False):
+    # if single ddks method is provided, convert to list
+    if type(dks_list) != type([]):
+        dks_list = [dks_list]
+    if type(data_gen1) != type([]):
+        data_gen1 = [data_gen1]
+    if type(data_gen2) != type([]):
+        data_gen2 = [data_gen2]
+    # Check if two data_gen functions are provided
+    if name_list is None:
+        name_list = [xdks.__class__.__name__ for xdks in dks_list]
+    # Setup multiprocessing pool
+    p = multiprocessing.Pool(min([nper, multiprocessing.cpu_count()]))
+    # Setup data method
+    vals = []
+    Fun = F
+    if calc_P == True:
+        Fun = F_perm
+    #n_list = []
+    for n in np.geomspace(nmin, nmax, nsteps):
+        n = int(n)
+        for dgen1, dgen2,dname1,dname2 in zip(data_gen1,data_gen2,d1_name,d2_name):
+            p_list = [dgen1(n, d) for i in range(nper)]
+            t_list = [dgen2(n, d) for i in range(nper)]
+            for xdks, name in zip(dks_list, name_list):
+                store = []
+                ress = []
+                print(f'Running {name} for n={n}')
+                for i in range(nper):
+                    pred = p_list[i]
+                    true = t_list[i]
+                    res = p.apply_async(Fun, args=(pred, true, xdks))
+                    ress.append(res)
+                for res in tqdm.tqdm(ress):
+                    store.append(np.asarray(res.get()))
+                store = np.asarray(store)
+                if calc_P == True:
+                    vals.append([name, dname1,dname2, n, d, store[:, 0],store[:,1],store[:,2]])
+                    #df_vals = DataFrame(vals,columns=['name','dg1','dg2','n','d','D','T','p'])
+                else:
+                    vals.append([name, dname1,dname2, n, d, store[:, 0], store[:, 1],np.nan])
+                    #df_vals = DataFrame(vals, columns=['name','dg1','dg2','n','d', 'D', 'T','p'])
+    df_vals = DataFrame(vals, columns=['name', 'dg1', 'dg2', 'n', 'd', 'D', 'T', 'p'])
+    return df_vals
     '''        
         print(mns)
         print(std)

@@ -36,8 +36,8 @@ def samp2(n,d):
 
 if __name__=='__main__':
     rdks = m.rdKS()
-    vdks = m.vdKS(vox_per_dim=2)
-    vdks2 = m.vdKS(approx=False,vox_per_dim=1)
+    vdks = m.vdKS(vox_per_dim=10)
+    vdks2 = m.vdKS(approx=False,vox_per_dim=10)
     ddks = m.ddKS()
     pdks = m.pdKS()
     m1 = 0.0
