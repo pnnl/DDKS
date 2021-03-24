@@ -6,13 +6,12 @@ import warnings
 #Method should always = 'all' subsampling not supported
 
 class rdKS(ddKS):
-    def __init__(self, soft=False, T=0.1, method='all', n_test_points=10,
-                 pts=None, norm=False, oneway=True):
-        super().__init__(soft, T, method, n_test_points,
-                 pts, norm, oneway)
+    def __init__(self,norm=False):
+        self.norm = norm
+        super().__init__()
 
     def setup(self, pred, true):
-        #Set dimension with pred dataset
+        #Set dimension with pred dataset ddks.__call__ garauntees pred[1]==true[1]
         self.d = pred.shape[1]
         return
 
@@ -23,11 +22,7 @@ class rdKS(ddKS):
         d_from_corner_t = self.get_d_from_corner(true)
         os_pp = self.get_orthants_from_d(d_from_corner_p, d_from_corner_p)
         os_pt = self.get_orthants_from_d(d_from_corner_t, d_from_corner_p)
-        D1 = self.max((os_pp/pred.shape[0] - os_pt/true.shape[0]).abs())
-        if self.oneway:
-            D = D1
-        else:
-            warnings.warn("Only Oneway implemented for rdks")
+        D = self.max((os_pp/pred.shape[0] - os_pt/true.shape[0]).abs())
         if self.norm:
             D = D / float(pred.shape[0])
         return D
@@ -38,23 +33,25 @@ class rdKS(ddKS):
         return d
 
     def get_orthants_from_d(self, d, d_test):
-        os = torch.empty((d.shape[0], 2**self.d))
-        sorted_ds = d
-        sorted_test_args = torch.empty((d_test.shape)).long()
+        #Splits space into len(d) sets of orthants and tests occupancy using d_test
+        os = torch.empty((d_test.shape[0], 2**self.d))
+        sorted_ds = d #  [n_p x self.d]
+        sorted_test_args = torch.empty(d_test.shape).long() #[n_t x self.d]
         for i in range(2**self.d):
             sorted_ds[:, i], _ = torch.sort(d[:, i])
             _, sorted_test_args[:, i] = torch.sort(d_test[:, i])
-        N = d.shape[0]
+        N = d_test.shape[0] # Number of points in test group
         for octant in range(2**self.d):
-            test_point_index = 0
-            point_index = 0
+            test_point_index = 0 # Points to a new test point
+            point_index = 0      # The point space is being split with
             while test_point_index < N:
                 idx = sorted_test_args[test_point_index, octant]
-                while sorted_ds[point_index, octant] < d_test[idx, octant] and point_index < N - 1:
+                while sorted_ds[point_index, octant] < d_test[idx, octant] and point_index < d.shape[0]-1:
                     point_index += 1
                 os[idx, octant] = point_index
                 test_point_index += 1
         return os
+
     def find_corners(self, x1, x2):
         '''
         Creates corners to calculate distance from 

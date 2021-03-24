@@ -1,19 +1,26 @@
-# ddKS-Test code
+# ddKS
 
-This is the code repo for our ddKS test. 
+Code repo for the d-dimensional Kolmogorov-Smirnov test.
 
-voxel ddks (vdks) is being frequently updated please email/message Shane Jackson to ensure the repo has the most update version.
- 
+As of 3/24/2021 there are 3 methods implemented:
 
+* ddKS - d-dimensional KS test caclulated per [link publication] 
+    * Variable splitting of space (all points, subsample, grid spacing)
+* rdKS - ddKS approximation using distance from 2^d corners [link publication]
+* vdKS - ddKS approximation calculating ddks distance between voxels instead of points
+
+All xdks functions expect inputs of the form xdks(pred: [N1,d], true: [N2,d]) where N1,N2 are the number of samples and d is the dimension of the data.
+    
+    #Initilize instance of ddks
+    xdks = ddks.methods.ddKS()
+    #Generate two data sets
+    pred = torch.normal(0.0,1.0,(100, 4))
+    true = torch.normal(0.0,1.0,(100, 4))
+    D = xdks(pred,true)
 
 
 ### Directories:
-1. data - Distribution generators should go here
-2. figs - Figure generators should go here
-3. methods - ddks +variants code (currently radial/rigorous/voxel methods)
-4. tests - test_methods has a quick test to verify methods run. Also includes multiprocessing script for many run tests  
-### To-do List
-Please add things here as you think of them. 
-
-* Add data generating methods
-* Add figure generating methods
+1. methods - Callable classes for xdks methods [x=d,r,v]
+1. data - Contains several data generators to play around with
+1. run_scripts - Contains an example run script 
+1. Unit_tests - Contains unit tests for repo   

@@ -42,8 +42,8 @@ if __name__=='__main__':
     pdks = m.pdKS()
     m1 = 0.0
     m2 = 0.0
-    std1 = 1.0
-    std2 = 1.0
+    std1 = 0.1
+    std2 = 0.1
     data_gen = set_dgen(m1,std1)
     data_gen2 = set_dgen(m2,std2)
 
@@ -51,12 +51,12 @@ if __name__=='__main__':
     p50 = m.pdKS(plane_per_dim=50)
     data_gen = samp1
     data_gen2 = samp2
-    name_list = ['ddKS', 'vdks', 'vdks_NA']
+    name_list = ['ddKS', 'vdks']
     #name_list = [ 'vdks', 'vdks_NA']
     #name_list = ['vdks_NA']
-    vals = t.run_mp([ddks,vdks,vdks2], data_gen, d=3, data_gen2=data_gen2, nper=1, nmin=1E3,
-                    nmax=1E3,
-                    nsteps=1, name_list=name_list)
+    vals = t.run_mp2([ddks,vdks], data_gen, d=3, data_gen2=data_gen2, nper=2, nmin=1E2,
+                    nmax=1E2,
+                    nsteps=1, name_list=name_list,Func='FOne')
     print(vals)
     #p100 = m.pdKS(plane_per_dim=100)
     #p250 = m.pdKS(plane_per_dim=250)

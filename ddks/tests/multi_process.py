@@ -3,6 +3,13 @@ import multiprocessing
 import numpy as np
 import tqdm
 from pandas import DataFrame
+import torch
+
+
+def KLDIV(P,Q):
+    return(P*(P/Q).log().sum())
+
+
 def F(true,pred,xdks):
     '''
     Running the xdks test of choice
@@ -17,14 +24,39 @@ def F(true,pred,xdks):
     toc = time.time()
     return [D, toc - tic]
 
+def FOne(true,pred,xdks):
+    '''
+    Running the xdks test of choice
+    Helper function to use multiprocessing
+    :param true: true data set
+    :param pred: pred data set
+    :param xdks: method of ddks (see ddks.methods)
+    :return:
+    '''
+    tic = time.time()
+    D = xdks(true, pred)
+    toc = time.time()
+
+    print('Calculated D')
+    print(true[:,0].unsqueeze(dim=1).shape)
+    print(true.shape)
+    one_D = [xdks(true[:,d].unsqueeze(dim=1),pred[:,d].unsqueeze(dim=1)) for d in range(pred.shape[1])]
+    Max_one_D = np.max(np.asarray(one_D))
+    print("Here")
+    KL = 0#KLDIV(pred,true)
+    print(KL)
+    return [D, toc - tic, KL ,Max_one_D]
 def F_perm(true,pred,xdks):
     tic = time.time()
     D = xdks(true, pred)
     p,_,_ = xdks.permute(J=100)
     toc = time.time()
     return [D, toc - tic, p]
+FunDict = {'F':(F,[]), 'FOne':(FOne,['KL','D1Max']),'F_perm':(F_perm,['p'])}
 
-def run_mp(dks_list,data_gen1,d=3,data_gen2=None, nper=10,name_list = None,nmin=10,nmax=10E4,nsteps=10,calc_P=False):
+
+
+def run_mp(dks_list,data_gen1,d=3,data_gen2=None, nper=10,name_list = None,nmin=10,nmax=10E4,nsteps=10,calc_P=False, KL=False,OneD=False):
     '''
     Times and runs a list of xdks methods using 10 sets of data ranging geometrically from n=10..nmax
     :param dks_list: List of xdks methods
@@ -44,7 +76,6 @@ def run_mp(dks_list,data_gen1,d=3,data_gen2=None, nper=10,name_list = None,nmin=
         data_gen2 = data_gen1
     if name_list is None:
         name_list = [xdks.__class__.__name__ for xdks in dks_list]
-
     #Setup multiprocessing pool
     p = multiprocessing.Pool(min([nper,multiprocessing.cpu_count()]))
     # Setup data method
@@ -52,6 +83,9 @@ def run_mp(dks_list,data_gen1,d=3,data_gen2=None, nper=10,name_list = None,nmin=
     Fun=F
     if calc_P == True:
         Fun=F_perm
+    if OneD == True:
+        Fun = FOne
+
 
     for n in np.geomspace(nmin, nmax, nsteps):
         n = int(n)
@@ -76,6 +110,68 @@ def run_mp(dks_list,data_gen1,d=3,data_gen2=None, nper=10,name_list = None,nmin=
                 vals.append([name, n, d, store[:, 0], store[:, 1]])
                 df_vals = DataFrame(vals, columns=['name', 'n','d', 'D', 'T'])
     return(df_vals)
+
+def main_mp_loop(Fun,nmin,nmax,nsteps,nper,d,dks_list,name_list,data_gen1,data_gen2):
+    # Setup multiprocessing pool
+    p = multiprocessing.Pool(min([nper, multiprocessing.cpu_count()]))
+    vals = []
+    for n in np.geomspace(nmin, nmax, nsteps):
+        n = int(n)
+        p_list = [data_gen1(n, d) for i in range(nper)]
+        t_list = [data_gen2(n, d) for i in range(nper)]
+        for xdks, name in zip(dks_list, name_list):
+            store = []
+            ress = []
+            print(f'Running {name} for n={n}')
+            for i in range(nper):
+                pred = p_list[i]
+                true = t_list[i]
+                res = p.apply_async(Fun, args=(pred, true, xdks))
+                ress.append(res)
+            for res in tqdm.tqdm(ress):
+                store.append(np.asarray(res.get()))
+            store = np.asarray(store)
+            store = [store[:,i] for i in range(store.shape[1])]
+            base = [name,n,d]
+            base.extend(store)
+            vals.append(base.copy())
+    return vals
+
+def run_mp2(dks_list,data_gen1,d=3,data_gen2=None, nper=10,name_list = None,nmin=10,nmax=10E4,nsteps=10,Func='F'):
+    '''
+    Times and runs a list of xdks methods using 10 sets of data ranging geometrically from n=10..nmax
+    :param dks_list: List of xdks methods
+    :param data_gen1: Method to generate pred/true dists
+    :param d: dimension of system
+    :param data_gen2: OPTIONAL if not provided data_gen1=data_gen2
+    :param nper: OPTIONAL (default 10) Number of runs with fixed n
+    :param name_list: OPTIONAL (default = xdks.name) Specify to label output data
+    :param nmax: (default 10E4)  Largest dataset values generated
+    :return: df_vals dataframe with D,Time values
+    '''
+    #if single ddks method is provided, convert to list
+    if type(dks_list) != type([]):
+        dks_list = [dks_list]
+    #Check if two data_gen functions are provided
+    if data_gen2 is None:
+        data_gen2 = data_gen1
+    if name_list is None:
+        name_list = [xdks.__class__.__name__ for xdks in dks_list]
+
+    # Setup data method
+    Fun,cnames=FunDict[Func]
+    colnames = ['name', 'n', 'd', 'D', 'T']
+    colnames.extend(cnames)
+    vals = main_mp_loop(Fun, nmin, nmax, nsteps, nper, d, dks_list, name_list,data_gen1,data_gen2)
+    print(colnames)
+    df_vals = DataFrame(vals, columns=colnames)
+    return(df_vals)
+
+
+
+
+
+
 
 def run_mpDims(dks_list, data_gen1, d_list, data_gen2=None, nper=10,name_list=None, n=100):
     '''
@@ -162,7 +258,7 @@ def run_mpGen(dks_list,data_gen1,data_gen2,d1_name,d2_name,d=3,nper=10,name_list
                 store = np.asarray(store)
                 if calc_P == True:
                     vals.append([name, dname1,dname2, n, d, store[:, 0],store[:,1],store[:,2]])
-                    #df_vals = DataFrame(vals,columns=['name','dg1','dg2','n','d','D','T','p'])
+                    #df_vals = DataFrame(vals,columns=['name','dg1','dg2','n','d','D ','T','p'])
                 else:
                     vals.append([name, dname1,dname2, n, d, store[:, 0], store[:, 1],np.nan])
                     #df_vals = DataFrame(vals, columns=['name','dg1','dg2','n','d', 'D', 'T','p'])

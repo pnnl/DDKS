@@ -77,22 +77,6 @@ if __name__=='__main__':
 
 
 
-    #pdks
-    #
-    # dvals = t.run_mpDims([pdks], data_gen, [3, 10, 100, 200, 500, 800, 1000], n=100)
-    # dvals.to_pickle(f'./nd_pks_N{m1}{std1}_N{m2}{std2}.pkl')
-    #p5 = m.pdKS(plane_per_dim=5)
-    #p10 = m.pdKS(plane_per_dim=10)
-    #p25 = m.pdKS(plane_per_dim=25)
-    #p50 = m.pdKS(plane_per_dim=50)
-    #p100 = m.pdKS(plane_per_dim=100)
-    #p250 = m.pdKS(plane_per_dim=250)
-    #p500 = m.pdKS(plane_per_dim=500)
-    #p1000 = m.pdKS(plane_per_dim=1000)
-    #vals = t.run_mp([p5,p10,p25,p50,p100,p250,p500,p1000], data_gen, d=3, data_gen2=data_gen2, nper=10, nmin=1E2,nmax=1E2,
-    #                nsteps=1,name_list=['p5','p10','p25','p50','p100','p250','p500','p1000'])
-    #vals.to_pickle(f'./PVAR_{d}d_pdks_N{m1}{std1}_N{m2}{std2}.pkl')
-
     #Cone vs cone w/ background
     #Cone vs cone
     #vals = t.run_mp([vdks, rdks, ddks], cone_wrap, d=3, data_gen2=cone_wrap, nper=10, nmin=1e3,nmax=int(1e3),nsteps=1,calc_P=True)
@@ -100,7 +84,11 @@ if __name__=='__main__':
 
     #vals = t.run_mp([vdks, rdks, ddks], bgcone_wrap, d=3, data_gen2=bgcone_wrap, nper=10, nmin=1e3,nmax=1e3, nsteps=1,calc_P=True)
     #vals.to_pickle(f'./p{d}d_vrdks_bgcone_bgcone.pkl')
+    vals = t.run_mp2([vdks, rdks, ddks], cone_wrap, d=3, data_gen2=cone_wrap, nper=10, nmin=1e3,nmax=int(1e3),nsteps=1,Func='FOne')
+    vals.to_pickle(f'./1d_{d}d_vrdks_cone_cone.pkl')
 
+    vals = t.run_mp2([vdks, rdks, ddks], bgcone_wrap, d=3, data_gen2=bgcone_wrap, nper=10, nmin=1e3,nmax=1e3, nsteps=1,Func='FOne')
+    vals.to_pickle(f'./1d_{d}d_vrdks_bgcone_bgcone.pkl')
 
 
 
@@ -110,8 +98,8 @@ if __name__=='__main__':
 
     #Uniform vs diagonal
     #d=3
-    #vals = t.run_mp([vdks, rdks, ddks],samp1,d=3,data_gen2=samp2,nper=10,nmax=3e3,calc_P=True)
-    #vals.to_pickle(f'../runs/p{d}d_vrdks_uni_diag.pkl')
+    vals = t.run_mp2([vdks, rdks, ddks],samp1,d=3,data_gen2=samp2,nper=10,nmax=3e3,Func='FOne')
+    vals.to_pickle(f'../runs/1d_{d}d_vrdks_uni_diag.pkl')
     #Gaussian vs Gaussian with various amounts of background noise
     #m1 = 0.5
     #std1 = 0.1
@@ -127,18 +115,18 @@ if __name__=='__main__':
 
 
     #Gaussians of increasing distance
-    means = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8]
-    std = 0.1
-    dgen1 = [set_dgen(means[0],std) for m in means]
-    dgen2 = [set_dgen(m, std) for m in means]
-    d1_name = [f'N({means[0]},{std})' for m in means]
-    d2_name = [f'N({m},{std})' for m in means]
+    #means = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8]
+    #std = 0.1
+    #dgen1 = [set_dgen(means[0],std) for m in means]
+    #dgen2 = [set_dgen(m, std) for m in means]
+    #d1_name = [f'N({means[0]},{std})' for m in means]
+    #d2_name = [f'N({m},{std})' for m in means]
 
-    print('here')
-    vals = t.run_mpGen([vdks, rdks, ddks], dgen1, dgen2, d1_name, d2_name, d=3, nper=10, name_list=None, nmin=10, nmax=1E3,
-              nsteps=10, calc_P=True)
-    vals.to_pickle(f'../runs/p3d_vrdks_changeGauss.pkl')
-    print('here')
+    #print('here')
+    #vals = t.run_mpGen([vdks, rdks, ddks], dgen1, dgen2, d1_name, d2_name, d=3, nper=10, name_list=None, nmin=10, nmax=1E3,
+    #          nsteps=10, calc_P=True)
+    #vals.to_pickle(f'../runs/p3d_vrdks_changeGauss.pkl')
+    #print('here')
     #vals.to_pickle(f'./{d}d_vrdks_cone_bgcone.pkl')
     ## Poisson if we want
     #p1 = set_dgen_poisson(10)

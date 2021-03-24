@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-
+import warnings
 def S_(x, f):
     return np.power(-1, np.floor(4.0 * f * x))
 
@@ -31,15 +31,23 @@ class ddKS(object):
     def __call__(self, pred, true):
         '''
         Takes in two distributions and returns ddks distance
-        Child classes define setup/calcD
-        :param pred:
-        :param true:
+        For child classes define setup/calcD
+        :param pred: [N1 x d] tensor
+        :param true: [N2 x d] tensor
         :return:
         '''
         self.pred = pred
         self.true = true
+        #Enforce N x d and d1=d2
+        if len(pred.shape) < 2 or len(true.shape) < 2:
+            warnings.warn(f'Error Pred or True is missing a dimension')
+        if pred.shape[1] != true.shape[1]:
+            warnings.warn(f'Dimension Mismatch between pred/true: Shapes should be [n1,d], [n2,d]')
+
         self.setup(pred,true)
+
         D = self.calcD(pred, true)
+
         return D
     def setup(self,pred,true):
         self.getQU(pred,true)
@@ -65,8 +73,8 @@ class ddKS(object):
     # Setup Functions
     ###
     def getQU(self, pred, true):
-        # Choose points from each dataset for ddks (Usually all)
-        # Function to decide number of points to use for ddKS test
+        # Uses self.method to choose to use all points to split space or subsample
+        # or use grid
         if self.method == 'all':
             Q = pred;
             U = true
@@ -82,9 +90,6 @@ class ddKS(object):
                     Q[:, dim] = torch.linspace(pred[:, dim].min(), pred[:, dim].max(), self.n_test_points)
                 for dim in range(true.shape[1]):
                     U[:, dim] = torch.linspace(true[:, dim].min(), true[:, dim].max(), self.n_test_points)
-            else:
-                Q = self.pts.clone()
-                U = self.pts.clone()
         self.Q = Q
         self.U = U
         return
@@ -92,7 +97,13 @@ class ddKS(object):
     # calcD functions
     ###
     def get_orthants(self, x, points):
-        N = points.shape[0]
+        '''
+        n-Dimensional version of get_octants (probably faster to run 3-D using get_orthants)
+        :param x: Either pred/true used the samples being placed into orthants
+        :param points: The points being used to create orthants i.e Q/U if self.method='all' Q/U = pred/true
+        :return: row-Normalized occupancy matrix - each element corresponds to the occupancy % in an orthant
+        '''
+        N = x.shape[0]
         d = points.shape[1]
         # shape our input and test points into the right shape (N, 3, 1)
         x = x.unsqueeze(-1)
@@ -124,7 +135,7 @@ class ddKS(object):
         return x
 
     def get_octants(self, x, points):
-        N = points.shape[0]
+        N = x.shape[0]
         # shape our input and test points into the right shape (N, 3, 1)
         x = x.unsqueeze(-1)
         points = points.unsqueeze(-1)
