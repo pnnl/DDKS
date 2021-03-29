@@ -6,7 +6,7 @@ import warnings
 #Method should always = 'all' subsampling not supported
 
 class rdKS(ddKS):
-    def __init__(self,norm=False):
+    def __init__(self,norm=False,oneway=False):
         self.norm = norm
         super().__init__()
 
@@ -23,6 +23,11 @@ class rdKS(ddKS):
         os_pp = self.get_orthants_from_d(d_from_corner_p, d_from_corner_p)
         os_pt = self.get_orthants_from_d(d_from_corner_t, d_from_corner_p)
         D = self.max((os_pp/pred.shape[0] - os_pt/true.shape[0]).abs())
+        if not self.oneway:
+            os_tp = self.get_orthants_from_d(d_from_corner_p, d_from_corner_t)
+            os_tt = self.get_orthants_from_d(d_from_corner_t, d_from_corner_t)
+            D2 = self.max((os_tp / pred.shape[0] - os_tt / true.shape[0]).abs())
+            D = max(D,D2)
         if self.norm:
             D = D / float(pred.shape[0])
         return D

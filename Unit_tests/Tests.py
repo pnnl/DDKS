@@ -179,6 +179,9 @@ class MethodTests3D(unittest.TestCase):
         self.true = torch.normal(0, 1.0, (n, d))
         self.true2 = torch.normal(0, 1.0, (2 * n, d))
         self.pred1pt = torch.normal(0, 1.0, (1, d))
+
+        self.data1 = [[0,0,0],[0,.1,0], [0,.2,0], [0,.3,0]]
+
     def test_ddks(self):
         xdks = ddks.methods.ddKS()
         self.assertGreaterEqual(1.0, xdks(self.pred,self.true))

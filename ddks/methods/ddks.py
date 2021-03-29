@@ -15,7 +15,7 @@ class smooth_max(object):
 
 class ddKS(object):
     def __init__(self, soft=False, T=0.1, method='all', n_test_points=10,
-                 pts=None, norm=False, oneway=True):
+                 pts=None, norm=False, oneway=False):
         if soft:
             self.max = smooth_max(T=T)
             self.ge = self.softge
@@ -48,6 +48,7 @@ class ddKS(object):
 
         D = self.calcD(pred, true)
 
+
         return D
     def setup(self,pred,true):
         self.getQU(pred,true)
@@ -65,7 +66,7 @@ class ddKS(object):
             os_tt = self.get_octants(true, self.U)
             os_tp = self.get_octants(pred, self.U)
             D2 = self.max((os_tt - os_tp).abs())
-            D = (D1 + D2) / 2.
+            D = max(D1,D2)
         if self.norm:
             D = D / float(pred.shape[0])
         return D
