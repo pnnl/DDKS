@@ -9,6 +9,7 @@ class rdKS(ddKS):
     def __init__(self,norm=False,oneway=False):
         self.norm = norm
         super().__init__()
+        self.oneway = False
 
     def setup(self, pred, true):
         #Set dimension with pred dataset ddks.__call__ garauntees pred[1]==true[1]

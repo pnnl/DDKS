@@ -86,12 +86,10 @@ if __name__=='__main__':
     #vals.to_pickle(f'./p{d}d_vrdks_bgcone_bgcone.pkl')
     vals = t.run_mp2([vdks, rdks, ddks], cone_wrap, d=3, data_gen2=cone_wrap, nper=10, nmin=1e3,nmax=int(1e3),nsteps=1,Func='FOne')
     vals.to_pickle(f'./1d_{d}d_vrdks_cone_cone.pkl')
-
     vals = t.run_mp2([vdks, rdks, ddks], bgcone_wrap, d=3, data_gen2=bgcone_wrap, nper=10, nmin=1e3,nmax=1e3, nsteps=1,Func='FOne')
     vals.to_pickle(f'./1d_{d}d_vrdks_bgcone_bgcone.pkl')
-
-
-
+    vals = t.run_mp2([vdks, rdks, ddks], cone_wrap, d=3, data_gen2=bgcone_wrap, nmin=1e3, nper=10, nmax=1e3, nsteps=1,Func='FOne')
+    vals.to_pickle(f'./1d_{d}d_vrdks_cone_bgcone.pkl')
 
     #vals = t.run_mp([vdks, rdks, ddks], cone_wrap, d=3, data_gen2=bgcone_wrap, nmin=1e4, nper=10, nmax=1e4, nsteps=1)
     #vals.to_pickle(f'./{d}d_vrdks_cone_bgcone.pkl')
@@ -100,34 +98,37 @@ if __name__=='__main__':
     #d=3
     vals = t.run_mp2([vdks, rdks, ddks],samp1,d=3,data_gen2=samp2,nper=10,nmax=3e3,Func='FOne')
     vals.to_pickle(f'../runs/1d_{d}d_vrdks_uni_diag.pkl')
+
+    #vals = t.run_mp2([vdks, rdks, ddks], samp1, d=3, data_gen2=samp2, nper=10, nmax=3e3, Func='F')
+    #vals.to_pickle(f'../runs/{d}d_vrdks_uni_diag.pkl')
+
+
     #Gaussian vs Gaussian with various amounts of background noise
-    #m1 = 0.5
-    #std1 = 0.1
-    #n_p = 0.5
-    #m2  = 0.3
-    #std2 = 0.1
-    #for n_p in [0.0, 0.1, 0.25, 0.5, 0.75]:
-    #    vals = t.run_mp([vdks, rdks, ddks], set_dgen(m1,std1), d=3, data_gen2=set_dgenNoise(m2,std2,n_p), nper=10, nmax=3e3,calc_P=True)
-    #    vals.to_pickle(f'../runs/p3d_vrdks_noise_diffdist_{n_p}.pkl')
-    #    vals = t.run_mp([vdks, rdks, ddks], set_dgen(m1, std1), d=3, data_gen2=set_dgenNoise(m1, std1, n_p), nper=10,
-    #                    nmax=3e3, calc_P=True)
-    #    vals.to_pickle(f'../runs/p3d_vrdks_noise_{n_p}.pkl')
+    m1 = 0.5
+    std1 = 0.1
+    n_p = 0.5
+    m2  = 0.3
+    std2 = 0.1
+    for n_p in [0.0, 0.1, 0.25, 0.5, 0.75]:
+        vals = t.run_mp([vdks, rdks, ddks], set_dgen(m1,std1), d=3, data_gen2=set_dgenNoise(m2,std2,n_p), nper=10, nmax=3e3,calc_P=True)
+        vals.to_pickle(f'../runs/p3d_vrdks_noise_diffdist_{n_p}.pkl')
+        vals = t.run_mp([vdks, rdks, ddks], set_dgen(m1, std1), d=3, data_gen2=set_dgenNoise(m1, std1, n_p), nper=10,
+                        nmax=3e3, calc_P=True)
+        vals.to_pickle(f'../runs/p3d_vrdks_noise_{n_p}.pkl')
 
 
     #Gaussians of increasing distance
-    #means = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8]
-    #std = 0.1
-    #dgen1 = [set_dgen(means[0],std) for m in means]
-    #dgen2 = [set_dgen(m, std) for m in means]
-    #d1_name = [f'N({means[0]},{std})' for m in means]
-    #d2_name = [f'N({m},{std})' for m in means]
+    means = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8]
+    std = 0.1
+    dgen1 = [set_dgen(means[0],std) for m in means]
+    dgen2 = [set_dgen(m, std) for m in means]
+    d1_name = [f'N({means[0]},{std})' for m in means]
+    d2_name = [f'N({m},{std})' for m in means]
 
-    #print('here')
-    #vals = t.run_mpGen([vdks, rdks, ddks], dgen1, dgen2, d1_name, d2_name, d=3, nper=10, name_list=None, nmin=10, nmax=1E3,
-    #          nsteps=10, calc_P=True)
-    #vals.to_pickle(f'../runs/p3d_vrdks_changeGauss.pkl')
-    #print('here')
-    #vals.to_pickle(f'./{d}d_vrdks_cone_bgcone.pkl')
+    vals = t.run_mpGen([vdks, rdks, ddks], dgen1, dgen2, d1_name, d2_name, d=3, nper=10, name_list=None, nmin=10, nmax=1E3,
+              nsteps=10, calc_P=True)
+    vals.to_pickle(f'../runs/p3d_vrdks_changeGauss.pkl')
+
     ## Poisson if we want
     #p1 = set_dgen_poisson(10)
     #p2 = set_dgen_poisson(20)

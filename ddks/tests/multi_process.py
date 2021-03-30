@@ -36,15 +36,9 @@ def FOne(true,pred,xdks):
     tic = time.time()
     D = xdks(true, pred)
     toc = time.time()
-
-    print('Calculated D')
-    print(true[:,0].unsqueeze(dim=1).shape)
-    print(true.shape)
     one_D = [xdks(true[:,d].unsqueeze(dim=1),pred[:,d].unsqueeze(dim=1)) for d in range(pred.shape[1])]
     Max_one_D = np.max(np.asarray(one_D))
-    print("Here")
     KL = 0#KLDIV(pred,true)
-    print(KL)
     return [D, toc - tic, KL ,Max_one_D]
 def F_perm(true,pred,xdks):
     tic = time.time()

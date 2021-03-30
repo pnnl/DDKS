@@ -54,17 +54,24 @@ class ddKS(object):
         self.getQU(pred,true)
     def calcD(self, pred, true):
         if pred.shape[1] != 3:
-            os_pp = self.get_orthants(pred, self.Q)
-            os_pt = self.get_orthants(true, self.Q)
+            get_ort = self.get_orthants
         else:
-            os_pp = self.get_octants(pred, self.Q)
-            os_pt = self.get_octants(true, self.Q)
+            get_ort = self.get_octants
+            #os_pp = self.get_orthants(pred, self.Q)
+            #os_pt = self.get_orthants(true, self.Q)
+        #else:
+            #os_pp = self.get_octants(pred, self.Q)
+            #os_pt = self.get_octants(true, self.Q)
+        os_pp = get_ort(pred, self.Q)
+        os_pt = get_ort(true, self.Q)
         D1 = self.max((os_pp - os_pt).abs())
         if self.oneway:
             D = D1
         else:
-            os_tt = self.get_octants(true, self.U)
-            os_tp = self.get_octants(pred, self.U)
+            #os_tt = self.get_octants(true, self.U)
+            #os_tp = self.get_octants(pred, self.U)
+            os_tt = get_ort(true, self.U)
+            os_tp = get_ort(pred, self.U)
             D2 = self.max((os_tt - os_tp).abs())
             D = max(D1,D2)
         if self.norm:
