@@ -1,8 +1,13 @@
 import torch
 import numpy as np
 import warnings
+from scipy.special import binom
+import logging
 def S_(x, f):
     return np.power(-1, np.floor(4.0 * f * x))
+
+def in_Z(x):
+    return (int(x) == x) and (x >= 0)
 
 
 class smooth_max(object):
@@ -52,24 +57,26 @@ class ddKS(object):
         return D
     def setup(self,pred,true):
         self.getQU(pred,true)
+
+    def M(self, sample, test_points):
+        if sample.shape[1] != 3:
+            get_ort = self.get_orthants
+        else:
+            get_ort = self.get_octants
+        _M = get_ort(sample, test_points)
+        return _M
+
     def calcD(self, pred, true):
         if pred.shape[1] != 3:
             get_ort = self.get_orthants
         else:
             get_ort = self.get_octants
-            #os_pp = self.get_orthants(pred, self.Q)
-            #os_pt = self.get_orthants(true, self.Q)
-        #else:
-            #os_pp = self.get_octants(pred, self.Q)
-            #os_pt = self.get_octants(true, self.Q)
         os_pp = get_ort(pred, self.Q)
         os_pt = get_ort(true, self.Q)
         D1 = self.max((os_pp - os_pt).abs())
         if self.oneway:
             D = D1
         else:
-            #os_tt = self.get_octants(true, self.U)
-            #os_tp = self.get_octants(pred, self.U)
             os_tt = get_ort(true, self.U)
             os_tp = get_ort(pred, self.U)
             D2 = self.max((os_tt - os_tp).abs())
@@ -170,6 +177,86 @@ class ddKS(object):
     ###
     #Testing/Validation Functions
     ###
+    def p_bi(self, n, m, lam):
+        if isinstance(n, float):
+            n = np.array([n])
+        if isinstance(m, float):
+            m = np.array([m])
+        _p_bi = binom(m, n) * np.power(lam, n) * np.power(1.0 - lam, m - n)
+        _p_bi[np.logical_not(np.isfinite(_p_bi))] = 0.0
+        return _p_bi
+
+    def get_n1_n2(self,delta, m_1, m_2):
+        #n_1 = np.arange(0, m_1 * (delta + 1) + 1)
+        #n_2 = m_2 * (delta + n_1/m_1)
+        #_n_2_2 = m_2 * (n_1/m_1 - delta)
+        #n_1 = np.concatenate((n_1, n_1))
+        #n_2 = np.concatenate((n_2, _n_2_2))
+        #idx = np.logical_and(n_1 == n_1.astype(int), n_2 == n_2.astype(int))
+        #idx = np.logical_and(idx, n_2 <= m_2)
+        #idx = np.logical_and(idx, n_1 <= m_1)
+        #idx = np.logical_and(idx, n_2 >= 0)
+        #idx = np.logical_and(idx, n_1 >= 0)
+        #n_1 = n_1[idx]
+        #n_2 = n_2[idx]
+        r_1 = np.arange(0.0, m_1 + 0.5) / m_1
+        r_2 = np.arange(0.0, m_2 + 0.5) / m_2
+        X, Y = np.meshgrid(r_1, r_2)
+        x = np.abs(X - Y)
+        idx = np.argwhere(np.abs(x - delta) < 1E-6)
+        n_1s = m_1 * r_1[idx[:, 1]]
+        n_2s = m_2 * r_2[idx[:, 0]]
+        return n_1s, n_2s
+
+    def p_delta(self, delta, m_1, m_2, lam):
+        _p_delta = 0.0
+        n_1, n_2 = self.get_n1_n2(delta, m_1, m_2)
+        _p_delta = np.sum(self.p_bi(n_1, m_1, lam) * self.p_bi(n_2, m_2, lam))
+        return _p_delta
+    
+    def p_gtdelta(self, delta, m_1, m_2, lam):
+        p_ltdelta = 0.0
+        m = max([m_1, m_2])
+        d_stars = np.arange(0.0, delta+1/m, 1/m)
+        for d_star in d_stars:
+            p_ltdelta += self.p_delta(d_star, m_1, m_2, lam)
+        return 1.0 - p_ltdelta
+
+    def m_line(self, delta, m_1, m_2):
+        return max([m_1, m_2 * (1.0 - delta)])
+
+    def p_D(self, pred=None, true=None):
+        if pred is None:
+            pred = self.pred
+        if true is None:
+            true = self.true
+        m_1 = pred.shape[0]
+        m_2 = true.shape[0]
+        d = true.shape[1]
+        D = self(pred, true).item()
+        # round D to the nearest increment by the largest of the sample sizes
+        m = m_1*m_2#max([m_1, m_2])
+        D = np.round(m*D) / m
+        #print(D, 'D')
+        lambda_ik = self.M(true, torch.cat((pred, true))).numpy()
+        # _p_D is the probability that every entry in M is less than or equal to
+        # D
+        _p_D = 1.0
+        for i in range(lambda_ik.shape[0]):
+            for k in range(lambda_ik.shape[1]):
+                p_gtdelta = self.p_gtdelta(D, m_1, m_2, lambda_ik[i, k])
+                _p_D *= 1.0 - p_gtdelta
+        # we desire to know the probability that something will be larger than D
+        return 1.0 - _p_D
+
+    def p(self, pred=None, true=None):
+        return self.p_D(pred=pred, true=true)
+
+    def delta_pm(self, delta, m_1, m_2, n_1):
+        delta_m = m_2 * ((n_1 / m_1) - delta)
+        delta_p = m_2 * ((n_1 / m_1) + delta)
+        return delta_p, delta_m
+
     def permute(self, pred=None, true=None, J=1_000):
         if pred is None:
             pred = self.pred
