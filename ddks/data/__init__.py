@@ -7,11 +7,137 @@ cone - or is this waiting until subsequent publications
 Multimodal gaussians?
 '''
 import torch
+import torchvision
 from .cone import  Cone
 from .smalldata import SmallDataSet
 from .cone import make_true
 
+class Dataset:
+    def __init__(self, dimension=3, dgf=lambda x: x, params=dict(), sample_size=100):
+        self.d = dimension
+        self.dgf = dgf
+        self.params = params
+        self.sample_size = sample_size
+        self.len = 200
+        self.i_batch = 0
 
+    def __len__(self):
+        return self.len
+
+    def __iter__(self):
+        self.i_batch = 0
+        return self
+
+    def __next__(self):
+        if self.i_batch <= self.len:
+            result = self.dgf(size=(self.sample_size, self.d), **self.params)
+            self.i_batch += 1
+            return result
+        else:
+            raise StopIteration
+
+class TwoSample:
+    def __init__(self, dimension=3, dgf_p=lambda x: x, dgf_t=lambda x: x, params_p=dict(), params_t=dict(),
+                 sample_size=100):
+        self.dataset_p = Dataset(dimension=dimension, dgf=dgf_p, params=params_p, sample_size=sample_size)
+        self.dataset_t = Dataset(dimension=dimension, dgf=dgf_t, params=params_t, sample_size=sample_size)
+        self.len = len(self.dataset_p)
+        self.i_batch = 0
+
+    def __len__(self):
+        return self.len
+
+    def __iter__(self):
+        self.i_batch = 0
+        self.dataset_p.i_batch = 0
+        self.dataset_t.i_batch = 0
+        return self
+
+    def __next__(self):
+        if self.i_batch <= self.len:
+            result_p = next(self.dataset_p)
+            result_t = next(self.dataset_t)
+            self.i_batch += 1
+            return (result_p, result_t)
+        else:
+            raise StopIteration
+
+class GVM(TwoSample):
+    def __init__(self, mean_p=1.0, mean_t=0.0, std=1.0, **kwargs):
+        dgf = torch.normal
+        params_p = dict(mean=mean_p, std=std)
+        params_t = dict(mean=mean_t, std=std)
+        super().__init__(dgf_p=dgf, params_p=params_p,
+                         dgf_t=dgf, params_t=params_t, **kwargs)
+
+class GVS(TwoSample):
+    def __init__(self, std_p=1.0, std_t=0.5, mean=0.0, **kwargs):
+        dgf = torch.normal
+        params_p = dict(mean=mean, std=std_p)
+        params_t = dict(mean=mean, std=std_t)
+        super().__init__(dgf_p=dgf, params_p=params_p,
+                         dgf_t=dgf, params_t=params_t, **kwargs)
+
+class DVU(TwoSample):
+    def __init__(self, **kwargs):
+        self.uniform_object = torch.distributions.Uniform(low=0.0, high=1.0)
+        def dgf_p(size, **kwargs):
+            diag_size = [size[0], 1]
+            return self.uniform_object.sample(sample_shape=diag_size).repeat(1, size[1])
+        def dgf_t(size, **kwargs):
+            return self.uniform_object.sample(sample_shape=size)
+        params = dict()
+        super().__init__(dgf_p=dgf_p, params_p=params,
+                         dgf_t=dgf_t, params_t=params, **kwargs)
+
+class Skew(TwoSample):
+    def __init__(self, lambda_p=1.0, lambda_t=2.0, **kwargs):
+        self.exp_p = torch.distributions.Exponential(lambda_p)
+        self.exp_t = torch.distributions.Exponential(lambda_t)
+        def dgf_p(size, **kwargs):
+            return self.exp_p.sample(sample_shape=size)
+        def dgf_t(size, **kwargs):
+            return self.exp_t.sample(sample_shape=size)
+        params = dict()
+        super().__init__(dgf_p=dgf_p, params_p=params,
+                         dgf_t=dgf_t, params_t=params, **kwargs)
+
+class MM(TwoSample):
+    def __init__(self, mean_p=1.0, mean_t=0.0, std=1.0, noise_fraction=0.5, **kwargs):
+        self.noise_fraction = noise_fraction
+        self.normal_p = torch.distributions.Normal(loc=mean_p, scale=std)
+        self.normal_t = torch.distributions.Normal(loc=mean_t, scale=std)
+        self.uniform = torch.distributions.Uniform(low=-3.0*std, high=3.0*std)
+        def dgf_p(size, **kwargs):
+            size_n = list(size)
+            size_n[0] = int(size_n[0] * noise_fraction)
+            size_u = list(size)
+            size_u[0] = size[0] - size_n[0]
+            normal = self.normal_p.sample(sample_shape=size_n)
+            uniform = self.uniform.sample(sample_shape=size_u)
+            sample = torch.cat((normal, uniform), dim=0)
+            sample = sample[torch.randperm(sample.size()[0])]
+            return sample
+        def dgf_t(size, **kwargs):
+            size_n = list(size)
+            size_n[0] = int(size_n[0] * noise_fraction)
+            size_u = list(size)
+            size_u[0] = size[0] - size_n[0]
+            normal = self.normal_t.sample(sample_shape=size_n)
+            uniform = self.uniform.sample(sample_shape=size_u)
+            sample = torch.cat((normal, uniform), dim=0)
+            sample = sample[torch.randperm(sample.size()[0])]
+            return sample
+        params = dict()
+        super().__init__(dgf_p=dgf_p, params_p=params,
+                         dgf_t=dgf_t, params_t=params, **kwargs)
+
+class LS(TwoSample):
+    def __init__(self):
+        self.model = torchvision.models.resnet18(pretrained=True)
+        #def dgf_p(size, **kwargs):
+        #    for image in 
+        super().__init__()
 
 def set_dgen(mean,std):
     def dgen(n, d):

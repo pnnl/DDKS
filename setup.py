@@ -2,7 +2,7 @@
 import os
 from setuptools import setup
 
-REQUIREMENTS = ['torch', 'numpy', 'scipy', 'pandas']
+REQUIREMENTS = ['torch', 'numpy', 'scipy', 'pandas', 'bootstrapped']
 
 setup(name='ddKS',
       version=0.1,
