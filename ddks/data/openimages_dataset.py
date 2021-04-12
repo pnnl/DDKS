@@ -4,11 +4,13 @@ import torch
 import tqdm
 import torchvision
 from skimage import io
+import numpy as np
 from ddks.data import TwoSample
+import ddks
 from openimages.download import download_images
 
 
-curr_path = os.path.dirname(__file__)
+curr_path = os.path.dirname(ddks.data.__file__)
 download_path = os.path.join(curr_path, 'openimages_data')
 
 class OpenImagesDataset:
@@ -31,8 +33,11 @@ def build_pca_matrix(dataset, model):
     for image, _ in tqdm.tqdm(dataset):
         if len(image.shape) < 3:
             image = image.unsqueeze(-1).repeat((1, 1, 3))
-        print(image.shape)
-        latent_space = model(image.permute((2, 0, 1)).unsqueeze(0))
+        with torch.no_grad():
+            model = model.to(torch.device('cuda:0'))
+            image = image.to(torch.device('cuda:0'))
+            latent_space = model(image.permute((2, 0, 1)).unsqueeze(0))
+            latent_space = latent_space.detach().cpu()
         latent_spaces.append(latent_space)
         counter += 1
     latent_spaces = torch.cat(latent_spaces)
@@ -43,8 +48,8 @@ def build_pca_matrix(dataset, model):
 
 class LS(TwoSample):
     def __init__(self, force_rebuild=False, dimension=10, **kwargs):
-        vehicle_path = os.path.join(os.path.dirname(__name__), f'vehicle_latent_spaces.csv')
-        person_path = os.path.join(os.path.dirname(__name__), f'person_latent_spaces.csv')
+        vehicle_path = os.path.join(curr_path, f'vehicle_latent_spaces.csv')
+        person_path = os.path.join(curr_path, f'person_latent_spaces.csv')
         if not force_rebuild and (os.path.exists(vehicle_path)) and (os.path.exists(person_path)):
             latent_spaces1 = np.loadtxt(vehicle_path)
             latent_spaces2 = np.loadtxt(person_path)
@@ -61,19 +66,22 @@ class LS(TwoSample):
             latent_spaces2 = build_pca_matrix(vehicle, self.model)
             np.savetxt(vehicle_path, latent_spaces1)
             np.savetxt(person_path, latent_spaces2)
+            latent_spaces1 = np.loadtxt(vehicle_path)
+            latent_spaces2 = np.loadtxt(person_path)
         latent_spaces1 = latent_spaces1[:, :dimension]
         latent_spaces2 = latent_spaces2[:, :dimension]
         latent_spaces1 = torch.from_numpy(latent_spaces1).float()
         latent_spaces2 = torch.from_numpy(latent_spaces2).float()
         def dgf_p(size, **kwargs):
+            print(size)
             idx = np.arange(latent_spaces1.shape[0])
             np.random.shuffle(idx)
-            idx = idx[:size]
+            idx = idx[:size[0]]
             return latent_spaces1[idx, :]
         def dgf_t(size, **kwargs):
             idx = np.arange(latent_spaces2.shape[0])
             np.random.shuffle(idx)
-            idx = idx[:size]
+            idx = idx[:size[0]]
             return latent_spaces2[idx, :]
         params = dict()
         super().__init__(dgf_p=dgf_p, params_p=params,
