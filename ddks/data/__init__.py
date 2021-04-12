@@ -132,12 +132,7 @@ class MM(TwoSample):
         super().__init__(dgf_p=dgf_p, params_p=params,
                          dgf_t=dgf_t, params_t=params, **kwargs)
 
-class LS(TwoSample):
-    def __init__(self):
-        self.model = torchvision.models.resnet18(pretrained=True)
-        #def dgf_p(size, **kwargs):
-        #    for image in 
-        super().__init__()
+
 
 def set_dgen(mean,std):
     def dgen(n, d):
