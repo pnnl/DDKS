@@ -27,10 +27,20 @@ class OpenImagesDataset:
         image = torch.from_numpy(image).float()
         return image, self.image_class
 
-def build_pca_matrix(dataset, model):
+def build_pca_matrix(dataset1, dataset2, model):
     latent_spaces = []
     counter = 0
     for image, _ in tqdm.tqdm(dataset):
+        if len(image.shape) < 3:
+            image = image.unsqueeze(-1).repeat((1, 1, 3))
+        with torch.no_grad():
+            model = model.to(torch.device('cuda:0'))
+            image = image.to(torch.device('cuda:0'))
+            latent_space = model(image.permute((2, 0, 1)).unsqueeze(0))
+            latent_space = latent_space.detach().cpu()
+        latent_spaces.append(latent_space)
+        counter += 1
+    for image, _ in tqdm.tqdm(dataset2):
         if len(image.shape) < 3:
             image = image.unsqueeze(-1).repeat((1, 1, 3))
         with torch.no_grad():
@@ -44,6 +54,8 @@ def build_pca_matrix(dataset, model):
     _, _, V = torch.pca_lowrank(latent_spaces, 20)
     pcas = torch.matmul(latent_spaces, V[:, :20])
     pcas = pcas[:, :20]
+    pcas1 = pcas[:len(dataset1), ...]
+    pcas2 = pcas[len(dataset1), ...]
     return pcas
 
 class LS(TwoSample):
@@ -62,8 +74,7 @@ class LS(TwoSample):
                 person = OpenImagesDataset(download_path, 'person')
                 vehicle = OpenImagesDataset(download_path, 'truck')
             self.model = torchvision.models.resnet18(pretrained=True)
-            latent_spaces1 = build_pca_matrix(person, self.model)
-            latent_spaces2 = build_pca_matrix(vehicle, self.model)
+            latent_spaces1, latent_spaces2 = build_pca_matrix(person, vehicle, self.model)
             np.savetxt(vehicle_path, latent_spaces1)
             np.savetxt(person_path, latent_spaces2)
             latent_spaces1 = np.loadtxt(vehicle_path)
