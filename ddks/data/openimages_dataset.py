@@ -30,7 +30,7 @@ class OpenImagesDataset:
 def build_pca_matrix(dataset1, dataset2, model):
     latent_spaces = []
     counter = 0
-    for image, _ in tqdm.tqdm(dataset):
+    for image, _ in tqdm.tqdm(dataset1):
         if len(image.shape) < 3:
             image = image.unsqueeze(-1).repeat((1, 1, 3))
         with torch.no_grad():
@@ -55,8 +55,8 @@ def build_pca_matrix(dataset1, dataset2, model):
     pcas = torch.matmul(latent_spaces, V[:, :20])
     pcas = pcas[:, :20]
     pcas1 = pcas[:len(dataset1), ...]
-    pcas2 = pcas[len(dataset1), ...]
-    return pcas
+    pcas2 = pcas[len(dataset1):, ...]
+    return pcas1, pcas2
 
 class LS(TwoSample):
     def __init__(self, force_rebuild=False, dimension=10, **kwargs):

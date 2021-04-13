@@ -4,7 +4,7 @@ from .rdks import rdKS
 from .pdks import pdKS
 import numpy as np
 import torch
-import hotelling
+from hotelling.stats import hotelling_t2
 
 class Permute:
     def __init__(self, score_function):
@@ -37,7 +37,7 @@ class Method:
                 self.significance_function = significance_function
         else:
             self.score_function = score_object
-            self.significance_function = score_object.permute
+            self.significance_function = Permute(score_object)
 
     def __call__(self, p, t, j):
         return self.significance_function(p, t, j=j)
@@ -45,7 +45,7 @@ class Method:
 
 ddks_method = Method(ddKS())
 
-hotelling_method = Method(score_function=hotelling.stats.hotelling_t2)
+hotelling_method = Method(score_function=hotelling_t2)
 
 class OneDKS:
     def __init__(self):
@@ -59,4 +59,4 @@ class OneDKS:
 
 onedks_method = Method(score_object=OneDKS())
 
-kldiv_method = Method(score_object=)
+#kldiv_method = Method(score_object=)
