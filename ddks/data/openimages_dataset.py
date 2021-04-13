@@ -84,7 +84,6 @@ class LS(TwoSample):
         latent_spaces1 = torch.from_numpy(latent_spaces1).float()
         latent_spaces2 = torch.from_numpy(latent_spaces2).float()
         def dgf_p(size, **kwargs):
-            print(size)
             idx = np.arange(latent_spaces1.shape[0])
             np.random.shuffle(idx)
             idx = idx[:size[0]]

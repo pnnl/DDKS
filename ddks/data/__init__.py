@@ -63,6 +63,7 @@ class TwoSample:
             raise StopIteration
 
 class GVM(TwoSample):
+    name = 'GVM'
     def __init__(self, mean_p=1.0, mean_t=0.0, std=1.0, **kwargs):
         dgf = torch.normal
         params_p = dict(mean=mean_p, std=std)
@@ -71,6 +72,7 @@ class GVM(TwoSample):
                          dgf_t=dgf, params_t=params_t, **kwargs)
 
 class GVS(TwoSample):
+    name = 'GVS'
     def __init__(self, std_p=1.0, std_t=0.5, mean=0.0, **kwargs):
         dgf = torch.normal
         params_p = dict(mean=mean, std=std_p)
@@ -79,11 +81,16 @@ class GVS(TwoSample):
                          dgf_t=dgf, params_t=params_t, **kwargs)
 
 class DVU(TwoSample):
-    def __init__(self, **kwargs):
+    name = 'DVU'
+    def __init__(self, width_p=0.0, **kwargs):
         self.uniform_object = torch.distributions.Uniform(low=0.0, high=1.0)
         def dgf_p(size, **kwargs):
             diag_size = [size[0], 1]
-            return self.uniform_object.sample(sample_shape=diag_size).repeat(1, size[1])
+            u = self.uniform_object.sample(sample_shape=size)
+            diag = self.uniform_object.sample(sample_shape=diag_size).repeat(1, size[1])
+            b = (1.0 - width_p)
+            diag = (b * diag + width_p * u)
+            return diag
         def dgf_t(size, **kwargs):
             return self.uniform_object.sample(sample_shape=size)
         params = dict()
@@ -91,6 +98,7 @@ class DVU(TwoSample):
                          dgf_t=dgf_t, params_t=params, **kwargs)
 
 class Skew(TwoSample):
+    name = 'Skew'
     def __init__(self, lambda_p=1.0, lambda_t=2.0, **kwargs):
         self.exp_p = torch.distributions.Exponential(lambda_p)
         self.exp_t = torch.distributions.Exponential(lambda_t)
@@ -103,6 +111,7 @@ class Skew(TwoSample):
                          dgf_t=dgf_t, params_t=params, **kwargs)
 
 class MM(TwoSample):
+    name = 'MM'
     def __init__(self, mean_p=1.0, mean_t=0.0, std=1.0, noise_fraction=0.5, **kwargs):
         self.noise_fraction = noise_fraction
         self.normal_p = torch.distributions.Normal(loc=mean_p, scale=std)
@@ -110,21 +119,33 @@ class MM(TwoSample):
         self.uniform = torch.distributions.Uniform(low=-3.0*std, high=3.0*std)
         def dgf_p(size, **kwargs):
             size_n = list(size)
-            size_n[0] = int(size_n[0] * noise_fraction)
+            size_n[0] = int(size_n[0] * (1.0 - noise_fraction))
             size_u = list(size)
             size_u[0] = size[0] - size_n[0]
-            normal = self.normal_p.sample(sample_shape=size_n)
-            uniform = self.uniform.sample(sample_shape=size_u)
+            if size_n[0] > 0:
+                normal = self.normal_p.sample(sample_shape=size_n)
+            else:
+                normal = torch.empty(size_n)
+            if size_u[0] > 0:
+                uniform = self.uniform.sample(sample_shape=size_u)
+            else:
+                uniform = torch.empty(size_u)
             sample = torch.cat((normal, uniform), dim=0)
             sample = sample[torch.randperm(sample.size()[0])]
             return sample
         def dgf_t(size, **kwargs):
             size_n = list(size)
-            size_n[0] = int(size_n[0] * noise_fraction)
+            size_n[0] = int(size_n[0] * (1.0 - noise_fraction))
             size_u = list(size)
             size_u[0] = size[0] - size_n[0]
-            normal = self.normal_t.sample(sample_shape=size_n)
-            uniform = self.uniform.sample(sample_shape=size_u)
+            if size_n[0] > 0:
+                normal = self.normal_t.sample(sample_shape=size_n)
+            else:
+                normal = torch.empty(size_n)
+            if size_u[0] > 0:
+                uniform = self.uniform.sample(sample_shape=size_u)
+            else:
+                uniform = torch.empty(size_u)
             sample = torch.cat((normal, uniform), dim=0)
             sample = sample[torch.randperm(sample.size()[0])]
             return sample
