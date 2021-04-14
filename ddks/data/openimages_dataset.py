@@ -59,6 +59,7 @@ def build_pca_matrix(dataset1, dataset2, model):
     return pcas1, pcas2
 
 class LS(TwoSample):
+    name = 'LS'
     def __init__(self, force_rebuild=False, dimension=10, **kwargs):
         vehicle_path = os.path.join(curr_path, f'vehicle_latent_spaces.csv')
         person_path = os.path.join(curr_path, f'person_latent_spaces.csv')

@@ -53,7 +53,7 @@ class HotellingT2:
         s, _, _, _ = hotelling_t2(p.double(), t.double())
         return s
 
-hotelling_method = Method(score_object=HotellingT2(), name='Hotelling-T2')
+hotelling_method = Method(score_object=HotellingT2(), name='HotellingT2')
 
 class OneDKS:
     def __init__(self):
@@ -65,7 +65,7 @@ class OneDKS:
             ds.append(self.ddks(p[:, d].unsqueeze(-1), t[:, d].unsqueeze(-1)))
         return max(ds)
 
-onedks_method = Method(score_object=OneDKS(), name='OneDKS')
+onedks_method = Method(score_object=OneDKS(), name='OnedKS')
 
 def kldiv_hist(pred, true):
     edges = []
