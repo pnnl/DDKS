@@ -47,6 +47,8 @@ class Method:
 
 
 ddks_method = Method(ddKS(), name='ddKS')
+vdks_method = Method(vdKS(), name='vdKS')
+rdks_method = Method(rdKS(), name='rdKS')
 
 class HotellingT2:
     def __call__(self, p, t):
