@@ -97,6 +97,27 @@ class DVU(TwoSample):
         super().__init__(dgf_p=dgf_p, params_p=params,
                          dgf_t=dgf_t, params_t=params, **kwargs)
 
+class DVUHighDim(TwoSample):
+    name = 'DVUHighDim'
+    def __init__(self, width_p=0.0, n_diag_dims=2, **kwargs):
+        self.uniform_object = torch.distributions.Uniform(low=0.0, high=1.0)
+        def dgf_p(size, **kwargs):
+            diag_size = [size[0], 1]
+            u_size = [size[0], n_diag_dims]
+            u = self.uniform_object.sample(sample_shape=u_size)
+            diag = self.uniform_object.sample(sample_shape=diag_size).repeat(1, n_diag_dims)
+            b = (1.0 - width_p)
+            diag = (b * diag + width_p * u)
+            non_diag_size = [size[0], size[1] - n_diag_dims]
+            overall_u = self.uniform_object.sample(sample_shape=non_diag_size)
+            diag = torch.cat((overall_u, diag), dim=1)
+            return diag
+        def dgf_t(size, **kwargs):
+            return self.uniform_object.sample(sample_shape=size)
+        params = dict()
+        super().__init__(dgf_p=dgf_p, params_p=params,
+                         dgf_t=dgf_t, params_t=params, **kwargs)
+
 class Skew(TwoSample):
     name = 'Skew'
     def __init__(self, lambda_p=1.0, lambda_t=2.0, **kwargs):
