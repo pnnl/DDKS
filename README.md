@@ -5,7 +5,7 @@
 <sup>1</sup>: Pacific Northwest National Laboratory, 
 <sup>2</sup>: Karlsruhe Institute of Technology
 
-This code accompanies our preprint paper submitted to IEEE Transactions on
+This code accompanies our paper submitted to IEEE Transactions on
 Pattern Analysis and Machine Intelligence titled "Accelerated Computation of a
 High Dimensional Kolmogorov-Smirnov Distance" (arXiv link to come in the next
 few days).  
