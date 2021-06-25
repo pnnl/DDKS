@@ -1,9 +1,9 @@
 # ddKS - a d-dimensional Kolmogorov-Smirnov Test
 
-*Alex Hagen^1, Shane Jackson^1, James Kahn^2, Jan Strube^1, Isabel Haide^2, Karl Pazdernik^1, and Connor Hainje^1*
+*Alex Hagen<sup>1</sup>, Shane Jackson<sup>1</sup>, James Kahn<sup>2</sup>, Jan Strube<sup>1</sup>, Isabel Haide<sup>2</sup>, Karl Pazdernik<sup>1</sup>, and Connor Hainje<sup>1</sup>*
 
-^1: Pacific Northwest National Laboratory
-^2: Karlsruhe Institute of Technology
+<sup>1</sup>: Pacific Northwest National Laboratory, 
+<sup>2</sup>: Karlsruhe Institute of Technology
 
 This code accompanies our preprint paper submitted to IEEE Transactions on
 Pattern Analysis and Machine Intelligence titled "Accelerated Computation of a
