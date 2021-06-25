@@ -6,10 +6,11 @@ import warnings
 #Method should always = 'all' subsampling not supported
 
 class rdKS(ddKS):
-    def __init__(self,norm=False,oneway=False):
+    def __init__(self, norm=False, oneway=False, corner_method='d+1'):
         self.norm = norm
         super().__init__()
         self.oneway = False
+        self.corner_method = corner_method.strip().lower()
 
     def setup(self, pred, true):
         #Set dimension with pred dataset ddks.__call__ garauntees pred[1]==true[1]
@@ -18,7 +19,12 @@ class rdKS(ddKS):
 
     def calcD(self, pred, true):
         #Find corners in d-dimensions
-        self.find_corners(pred, true)
+        if self.corner_method == '2^d':
+            self.corner_size = 2**self.d
+            self.find_corners(pred, true)
+        elif self.corner_method == 'd+1':
+            self.corner_size = self.d + 1
+            self.find_dplusonecorners(pred, true)
         d_from_corner_p = self.get_d_from_corner(pred)
         d_from_corner_t = self.get_d_from_corner(true)
         os_pp = self.get_orthants_from_d(d_from_corner_p, d_from_corner_p)
@@ -33,21 +39,21 @@ class rdKS(ddKS):
             D = D / float(pred.shape[0])
         return D
     def get_d_from_corner(self, x):
-        _x = x.unsqueeze(-1).repeat(1,1,2**self.d)
+        _x = x.unsqueeze(-1).repeat(1, 1, self.corner_size)
         d = _x - self.corners
         d = torch.sqrt(torch.sum(torch.pow(d, 2.0), dim=1))
         return d
 
     def get_orthants_from_d(self, d, d_test):
         #Splits space into len(d) sets of orthants and tests occupancy using d_test
-        os = torch.empty((d_test.shape[0], 2**self.d))
+        os = torch.empty((d_test.shape[0], self.corner_size))
         sorted_ds = d #  [n_p x self.d]
         sorted_test_args = torch.empty(d_test.shape).long() #[n_t x self.d]
-        for i in range(2**self.d):
+        for i in range(self.corner_size):
             sorted_ds[:, i], _ = torch.sort(d[:, i])
             _, sorted_test_args[:, i] = torch.sort(d_test[:, i])
         N = d_test.shape[0] # Number of points in test group
-        for octant in range(2**self.d):
+        for octant in range(self.corner_size):
             test_point_index = 0 # Points to a new test point
             point_index = 0      # The point space is being split with
             while test_point_index < N:
@@ -75,4 +81,18 @@ class rdKS(ddKS):
         for n in range(2**self.d):
             bs = format(n, f'0{self.d}b')
             cs[n,:] = torch.tensor([mins[i] if c == '0' else maxs[i] for i, c in enumerate(bs)])
+        self.corners = cs.T.unsqueeze(0)
+
+    def find_dplusonecorners(self, x1, x2):
+        cs = torch.empty((self.d+1, self.d))
+        x1_min,_ = torch.min(x1,dim=0)
+        x2_min,_ = torch.min(x2,dim=0)
+        x1_max,_ = torch.max(x1,dim=0)
+        x2_max,_ = torch.max(x1, dim=0)
+        mins,_ = torch.stack((x1_min,x2_min)).min(dim=0)
+        maxs,_ = torch.stack((x1_max, x2_max)).max(dim=0)
+        cs[0, :] = mins
+        for n in range(self.d):
+            cs[n+1, :] = mins
+            cs[n+1, n] = maxs[n]
         self.corners = cs.T.unsqueeze(0)
