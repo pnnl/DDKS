@@ -30,7 +30,7 @@ pip install -e .
 
 from the top level of the repository.  Then, you can get started used the
 repository by starting a `ddks` object and performing the distance calculation
-on any torch tensor that is `sample_size` x `dimension`.
+on any pair of torch tensors that are `sample_size` x `dimension`.
 
 ```python
 import torch
@@ -59,9 +59,7 @@ If you want to use a different accelerated method, simply use
 `ddks.methods.rdKS` or `ddks.methods.vdKS`. Note that rdKS and vdKS cannot use
 GPU.
 
-
-
-# Directories:
+# Package Structure:
 1. methods - Callable classes for xdks methods [x=d,r,v]
 1. data - Contains several data generators to play around with
 1. run_scripts - Contains an example run script 
