@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 REQUIREMENTS = ['torch', 'numpy', 'scipy', 'pandas', 'hotelling', 'bootstrapped', 'openimages']
 
@@ -11,6 +11,6 @@ setup(name='ddKS',
       author_email='alexander.hagen@pnnl.gov',
       url='https://github.com/pnnl/ddks',
       long_description=open('README.md').read(),
-      packages=['ddks'],
+      packages=find_packages(),
       install_requires=REQUIREMENTS,
      )

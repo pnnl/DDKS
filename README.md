@@ -21,14 +21,22 @@ As of 6/25/2021 there are 3 methods implemented:
 
 # Quickstart
 
-Installation of `ddks` should be pretty easy, simply clone this repository
-into a safe spot on your computer and run
+Installation of `ddks` should be pretty easy, simple run
+
+```bash
+pip install git+https://github.com/pnnl/DDKS
+```
+
+or, if you want to develop on DDKS, simply clone this repository into a safe
+spot on your computer and run
 
 ```bash
 pip install -e .
 ```
 
-from the top level of the repository.  Then, you can get started used the
+from the top level of the repository.
+
+Then, you can get started used the
 repository by starting a `ddks` object and performing the distance calculation
 on any pair of torch tensors that are `sample_size` x `dimension`.
 
