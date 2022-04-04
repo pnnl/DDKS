@@ -7,8 +7,7 @@
 
 This code accompanies our paper submitted to IEEE Transactions on
 Pattern Analysis and Machine Intelligence titled "Accelerated Computation of a
-High Dimensional Kolmogorov-Smirnov Distance" (arXiv link to come in the next
-few days).  
+High Dimensional Kolmogorov-Smirnov Distance" ([arXiv](https://arxiv.org/abs/2106.13706)).  
 
 As of 6/25/2021 there are 3 methods implemented:
 
