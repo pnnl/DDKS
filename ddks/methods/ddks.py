@@ -133,7 +133,7 @@ class ddKS(object):
         x = self.ge(x, comp_x)
         orthants = []
         orthant_matrix = self.get_orthant_matrix(d)
-        for i in range(int(np.power(2, d))):
+        for i in range(2**d):
             membership = 1.0
             for j in range(d):
                 membership *= (float(orthant_matrix[i, j] < 0) + orthant_matrix[i, j] * x[:, j, :]).abs()
