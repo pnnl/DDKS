@@ -214,6 +214,9 @@ class ddKS(object):
 
     def get_n1_n2_linear(self, delta, m_1, m_2):
         """An implementation of get_n1_n2 with linear runtime and worst-case linear memory. Should be used for large m_1 * m_2."""
+        flip = m1 > m2
+        if flip: m1, m2 = m2, m1
+
         n_1s, n_2s = [], []
         for x in range(m_1 + 1):  # consider integers \in [0, m1]
             _x = x * m_2 / m_1
@@ -228,7 +231,10 @@ class ddKS(object):
                     n_1s.append(x)
                     n_2s.append(y)
 
-        return np.array(n_1s), np.array(n_2s)
+        if flip:
+            return np.array(n_2s), np.array(n_1s)
+        else:
+            return np.array(n_1s), np.array(n_2s)
 
     def p_delta(self, delta, m_1, m_2, lam):
         _p_delta = 0.0
