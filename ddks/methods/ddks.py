@@ -200,7 +200,7 @@ class ddKS(object):
         #n_1 = n_1[idx]
         #n_2 = n_2[idx]
 
-        if m_1 * m_2 > 250:
+        if m_1 * m_2 > 20_000:
             return self.get_n1_n2_linear(delta, m_1, m_2)
 
         r_1 = np.arange(0.0, m_1 + 0.5) / m_1
