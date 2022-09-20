@@ -199,6 +199,10 @@ class ddKS(object):
         #idx = np.logical_and(idx, n_1 >= 0)
         #n_1 = n_1[idx]
         #n_2 = n_2[idx]
+
+        if m_1 * m_2 > 20_000:
+            return self.get_n1_n2_linear(delta, m_1, m_2)
+
         r_1 = np.arange(0.0, m_1 + 0.5) / m_1
         r_2 = np.arange(0.0, m_2 + 0.5) / m_2
         X, Y = np.meshgrid(r_1, r_2)
@@ -207,6 +211,30 @@ class ddKS(object):
         n_1s = m_1 * r_1[idx[:, 1]]
         n_2s = m_2 * r_2[idx[:, 0]]
         return n_1s, n_2s
+
+    def get_n1_n2_linear(self, delta, m_1, m_2):
+        """An implementation of get_n1_n2 with linear runtime and worst-case linear memory. Should be used for large m_1 * m_2."""
+        flip = m_1 > m_2
+        if flip: m_1, m_2 = m_2, m_1
+
+        n_1s, n_2s = [], []
+        for x in range(m_1 + 1):  # consider integers \in [0, m1]
+            _x = x * m_2 / m_1
+            _delta = m_2 * delta
+
+            for sign in [-1, +1]:
+                y = round(_x + sign * _delta)
+                if y < 0: continue
+                if y > m_2: continue
+                if abs(abs( x / m_1 - y / m_2 ) - delta) < 1e-6:
+                    # keep if still close enough after rounding
+                    n_1s.append(x)
+                    n_2s.append(y)
+
+        if flip:
+            return np.array(n_2s), np.array(n_1s)
+        else:
+            return np.array(n_1s), np.array(n_2s)
 
     def p_delta(self, delta, m_1, m_2, lam):
         _p_delta = 0.0
