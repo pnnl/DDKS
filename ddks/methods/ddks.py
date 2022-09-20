@@ -214,8 +214,8 @@ class ddKS(object):
 
     def get_n1_n2_linear(self, delta, m_1, m_2):
         """An implementation of get_n1_n2 with linear runtime and worst-case linear memory. Should be used for large m_1 * m_2."""
-        flip = m1 > m2
-        if flip: m1, m2 = m2, m1
+        flip = m_1 > m_2
+        if flip: m_1, m_2 = m_2, m_1
 
         n_1s, n_2s = [], []
         for x in range(m_1 + 1):  # consider integers \in [0, m1]
