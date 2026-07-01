@@ -1,3 +1,8 @@
+> [!IMPORTANT]
+> This repository has been archived and is no longer maintained.
+> The code is provided for historical reference and may contain unpatched or unknown vulnerabilities.
+> It should not be used in production systems.
+
 # ddKS - a d-dimensional Kolmogorov-Smirnov Test
 
 *Alex Hagen<sup>1</sup>, Shane Jackson<sup>1</sup>, James Kahn<sup>2</sup>, Jan Strube<sup>1</sup>, Isabel Haide<sup>2</sup>, Karl Pazdernik<sup>1</sup>, and Connor Hainje<sup>1</sup>*
